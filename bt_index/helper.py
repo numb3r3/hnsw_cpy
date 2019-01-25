@@ -6,8 +6,8 @@ def get_args_parser():
     from . import __version__
     parser = argparse.ArgumentParser()
 
-    group1 = parser.add_argument_group('File Paths',
-                                       'config the path, checkpoint and filename of a pretrained/fine-tuned BERT model')
+    group1 = parser.add_argument_group('Index options',
+                                       'config index input, vector size, etc.')
     group1.add_argument('-binary_file', type=argparse.FileType('rb'), required=True,
                         help='the path of the binary file to be indexed')
     group1.add_argument('-bytes_per_vector', type=int, required=True,
