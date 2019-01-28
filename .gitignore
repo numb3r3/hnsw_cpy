@@ -121,4 +121,4 @@ toy*.py
 post/
 toy*.ipynb
 data/
-.c
+**/*.c
