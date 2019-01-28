@@ -1,5 +1,7 @@
 # cython: language_level=3
 
+from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+
 cdef struct Node:
     Node*left
     Node*right
