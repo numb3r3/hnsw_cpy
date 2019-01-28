@@ -4,13 +4,12 @@ from setuptools.extension import Extension
 
 extensions = [
     Extension(
-        'fast_index',
-        ["fast_bt_index/fast_index.pyx"],
+        'bindex.cython_core', ['bindex/cython_core/cython_core.pyx'],
     ),
 ]
 
 setup(
-    name='fast_index',
+    name='bindex',
     packages=find_packages(),
     ext_modules=cythonize(extensions),
     version='0.0.1',
