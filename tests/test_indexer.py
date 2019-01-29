@@ -18,7 +18,7 @@ class TestIndexer(unittest.TestCase):
                           'num_keys': 8,
                           'num_unique_keys': 6}
 
-        tmp = np.random.randint(0, 255, [10000, 512], dtype=np.uint8)
+        tmp = np.random.randint(1, 255, [10000, 512], dtype=np.uint8)
         self.toy_data2 = {
             'data': tmp.tobytes(),
             'bytes': tmp.shape[1],

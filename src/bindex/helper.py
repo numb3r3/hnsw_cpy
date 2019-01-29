@@ -50,6 +50,8 @@ def get_args_parser():
                         help='the path of the binary file to be indexed')
     group1.add_argument('-bytes_per_vector', type=int, required=True,
                         help='number of bytes per vector')
+    group1.add_argument('-index_mode', type=str, choices=['none', 'trie'], default='trie',
+                        help='indexing mode')
 
     parser.add_argument('-verbose', action='store_true', default=False,
                         help='turn on additional logging for debug')

@@ -115,10 +115,9 @@ cdef class IndexCore:
             node = &self.root_node
             is_match = 1
             for _1 in range(self.bytes_per_vector):
-                key = (q_pt + _1)[0]
+                key = q_pt[_1]
                 while node:
-                    if node.key == 0 or node.key == key:
-                        node.key = key
+                    if node.key == key:
                         if not node.child:
                             is_match = 0
                             break
@@ -137,17 +136,23 @@ cdef class IndexCore:
                             break
                         else:
                             node = node.right
-            if is_match:
+                if not node:
+                    is_match = 0
+                if is_match == 0:
+                    break
+            if is_match == 1 and node.value:
                 final_result[_0] = 1
+            q_pt += self.bytes_per_vector
         return final_result
 
     cpdef void index_trie(self, unsigned char *data, const unsigned long num_total):
         cdef Node*node
+        cdef unsigned long _0
+        cdef unsigned short _1
         for _0 in range(num_total):
             node = &self.root_node
             for _1 in range(self.bytes_per_vector):
-                key = data[0]
-                data = data + 1
+                key = data[_1]
                 while node:
                     if node.key == 0 or node.key == key:
                         node.key = key
@@ -164,6 +169,7 @@ cdef class IndexCore:
                             node.right = create_node()
                         node = node.right
             self._index_value(node)
+            data += self.bytes_per_vector
 
     @property
     def counter(self):

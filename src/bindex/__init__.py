@@ -2,6 +2,8 @@ from bindex.cython_core import IndexCore
 
 from bindex.helper import set_logger
 
+__version__ = '0.0.1'
+
 
 class BIndex:
     def __init__(self, bytes_per_vector, index_mode='trie', verbose=False):
