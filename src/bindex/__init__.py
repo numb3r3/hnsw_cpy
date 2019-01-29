@@ -12,15 +12,17 @@ class BIndex:
         self.indexer = IndexCore(bytes_per_vector)
         self.index_mode = index_mode
         if index_mode == 'trie':
-            self.index_fn = lambda x: self.indexer.index_trie(x, self.validator(x))
-            self.contains_fn = lambda x: self.indexer.contains_trie(x, self.validator(x))
+            self._index_fn = lambda x: self.indexer.index_trie(x, self._get_size(x))
+            self._contains_fn = lambda x: self.indexer.contains_trie(x, self._get_size(x))
+            self._find_fn = lambda x: self.indexer.find_all_trie(x)
         elif index_mode == 'none':
-            self.index_fn = lambda x: self.indexer.index_chunk(x, self.validator(x))
-            self.contains_fn = lambda x: self.indexer.contains_chunk(x, self.validator(x))
+            self._index_fn = lambda x: self.indexer.index_chunk(x, self._get_size(x))
+            self._contains_fn = lambda x: self.indexer.contains_chunk(x, self._get_size(x))
+            self._find_fn = lambda x: self.indexer.find_all_chunk(x)
         else:
             raise NotImplementedError(f'mode="{index_mode}" is not implemented!')
 
-    def validator(self, data):
+    def _get_size(self, data):
         num_total = int(len(data) / self.bytes_per_vector)
         self.logger.info(f'input size: {len(data)} bytes;\t'
                          f'bytes/vector: {self.bytes_per_vector};\t'
@@ -29,11 +31,14 @@ class BIndex:
         return num_total
 
     def add(self, data):
-        self.index_fn(data)
+        self._index_fn(data)
 
     def contains(self, query):
-        result = self.contains_fn(query)
+        result = self._contains_fn(query)
         return [v > 0 for v in result]
+
+    def find(self, query):
+        return self._find_fn(query).tolist()
 
     @property
     def statistic(self):
