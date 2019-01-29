@@ -2,6 +2,7 @@
 
 # noinspection PyUnresolvedReferences
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+from cpython cimport array
 
 cdef struct Node:
     Node*left
@@ -47,6 +48,7 @@ cdef class IndexCore:
     cdef unsigned short alloc_size_per_time
     cdef Counter cnt
     cdef unsigned short bytes_per_vector
+    cdef unsigned char*_chunk_data
 
     cdef unsigned long get_memory_size(self):
         cdef unsigned long mem_usg
@@ -54,7 +56,7 @@ cdef class IndexCore:
         get_memory_size(&self.root_node, &mem_usg)
         return mem_usg
 
-    cdef void _add_value(self, Node*node):
+    cdef void _index_value(self, Node*node):
         if node.value and node.value[0] == node.value[1]:
             new_value = <unsigned long*> PyMem_Realloc(node.value,
                                                        (node.value[
@@ -74,7 +76,72 @@ cdef class IndexCore:
         node.value[0] += 1
         self.cnt.num_total_keys += 1
 
-    cpdef void index_multi_vecs(self, unsigned char *data, const int num_total):
+    cpdef void index_chunk(self, unsigned char *data, const unsigned long num_total):
+        self._chunk_data = data
+        self.cnt.num_total_keys = num_total
+
+    cpdef contains_chunk(self, unsigned char *query, const unsigned long num_query):
+        cdef array.array final_result = array.array('B', [0] * num_query)
+        cdef unsigned char *pt
+        cdef unsigned char *q_pt
+        cdef unsigned long _0
+        cdef unsigned long _1
+        cdef unsigned short _2
+        cdef unsigned char is_match
+        pt = self._chunk_data
+        for _0 in range(self.cnt.num_total_keys):
+            q_pt = query
+            for _1 in range(num_query):
+                is_match = 1
+                for _2 in range(self.bytes_per_vector):
+                    if (q_pt + _2)[0] != (pt + _2)[0]:
+                        is_match = 0
+                        break
+                if is_match == 1:
+                    final_result[_1] = 1
+                q_pt += self.bytes_per_vector
+            pt += self.bytes_per_vector
+        return final_result
+
+    cpdef contains_trie(self, unsigned char *query, const unsigned long num_query):
+        cdef array.array final_result = array.array('B', [0] * num_query)
+        cdef Node*node
+        cdef unsigned char *q_pt
+        cdef unsigned long _0
+        cdef unsigned short _1
+        cdef unsigned char is_match
+        q_pt = query
+        for _0 in range(num_query):
+            node = &self.root_node
+            is_match = 1
+            for _1 in range(self.bytes_per_vector):
+                key = (q_pt + _1)[0]
+                while node:
+                    if node.key == 0 or node.key == key:
+                        node.key = key
+                        if not node.child:
+                            is_match = 0
+                            break
+                        else:
+                            node = node.child
+                            break
+                    elif key < node.key:
+                        if not node.left:
+                            is_match = 0
+                            break
+                        else:
+                            node = node.left
+                    elif key > node.key:
+                        if not node.right:
+                            is_match = 0
+                            break
+                        else:
+                            node = node.right
+            if is_match:
+                final_result[_0] = 1
+        return final_result
+
+    cpdef void index_trie(self, unsigned char *data, const unsigned long num_total):
         cdef Node*node
         for _0 in range(num_total):
             node = &self.root_node
@@ -96,7 +163,7 @@ cdef class IndexCore:
                         if not node.right:
                             node.right = create_node()
                         node = node.right
-            self._add_value(node)
+            self._index_value(node)
 
     @property
     def counter(self):
