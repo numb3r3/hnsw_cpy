@@ -80,7 +80,7 @@ cdef class IndexCore:
         self._chunk_data = data
         self.cnt.num_total_keys = num_total
 
-    cpdef find_all_chunk(self, unsigned char *query):
+    cpdef find_chunk(self, unsigned char *query):
         cdef array.array final_result = array.array('L')
         cdef unsigned char *pt
         cdef unsigned long _0
@@ -97,6 +97,31 @@ cdef class IndexCore:
                 final_result.append(_0)
             pt += self.bytes_per_vector
         return final_result
+
+    cpdef find_batch_chunk(self, unsigned char *query, const unsigned long num_query):
+        cdef array.array final_result = array.array('L')
+        cdef array.array final_idx = array.array('L')
+        cdef unsigned char *pt
+        cdef unsigned char *q_pt
+        cdef unsigned long _0
+        cdef unsigned long _1
+        cdef unsigned short _2
+        cdef unsigned char is_match
+        pt = self._chunk_data
+        for _0 in range(self.cnt.num_total_keys):
+            q_pt = query
+            for _1 in range(num_query):
+                is_match = 1
+                for _2 in range(self.bytes_per_vector):
+                    if (q_pt + _2)[0] != (pt + _2)[0]:
+                        is_match = 0
+                        break
+                if is_match == 1:
+                    final_result.append(_0)
+                    final_idx.append(_1)
+                q_pt += self.bytes_per_vector
+            pt += self.bytes_per_vector
+        return final_idx, final_result
 
     cpdef contains_chunk(self, unsigned char *query, const unsigned long num_query):
         cdef array.array final_result = array.array('B', [0] * num_query)
@@ -121,7 +146,52 @@ cdef class IndexCore:
             pt += self.bytes_per_vector
         return final_result
 
-    cpdef find_all_trie(self, unsigned char *query):
+    cpdef find_batch_trie(self, unsigned char *query, const unsigned long num_query):
+        cdef array.array final_result = array.array('L')
+        cdef array.array final_idx = array.array('L')
+        cdef Node*node
+        cdef unsigned char *q_pt
+        cdef unsigned long _0
+        cdef unsigned short _1
+        cdef unsigned char is_match
+        q_pt = query
+        for _0 in range(num_query):
+            node = &self.root_node
+            is_match = 1
+            for _1 in range(self.bytes_per_vector):
+                key = q_pt[_1]
+                while node:
+                    if node.key == key:
+                        if not node.child:
+                            is_match = 0
+                            break
+                        else:
+                            node = node.child
+                            break
+                    elif key < node.key:
+                        if not node.left:
+                            is_match = 0
+                            break
+                        else:
+                            node = node.left
+                    elif key > node.key:
+                        if not node.right:
+                            is_match = 0
+                            break
+                        else:
+                            node = node.right
+                if not node:
+                    is_match = 0
+                if is_match == 0:
+                    break
+            if is_match == 1 and node.value:
+                for _2 in range(2, node.value[0] + 2):
+                    final_result.append(node.value[_2])
+                    final_idx.append(_0)
+            q_pt += self.bytes_per_vector
+        return final_idx, final_result
+
+    cpdef find_trie(self, unsigned char *query):
         cdef array.array final_result = array.array('L')
         cdef Node*node
         cdef unsigned short _1

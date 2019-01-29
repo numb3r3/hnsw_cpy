@@ -14,11 +14,13 @@ class BIndex:
         if index_mode == 'trie':
             self._index_fn = lambda x: self.indexer.index_trie(x, self._get_size(x))
             self._contains_fn = lambda x: self.indexer.contains_trie(x, self._get_size(x))
-            self._find_fn_single = lambda x: self.indexer.find_all_trie(x)
+            self._find_fn_single = lambda x: self.indexer.find_trie(x)
+            self._find_fn_batch = lambda x, y: self.indexer.find_batch_trie(x, y)
         elif index_mode == 'none':
             self._index_fn = lambda x: self.indexer.index_chunk(x, self._get_size(x))
             self._contains_fn = lambda x: self.indexer.contains_chunk(x, self._get_size(x))
-            self._find_fn_single = lambda x: self.indexer.find_all_chunk(x)
+            self._find_fn_single = lambda x: self.indexer.find_chunk(x)
+            self._find_fn_batch = lambda x, y: self.indexer.find_batch_chunk(x, y)
         else:
             raise NotImplementedError(f'mode="{index_mode}" is not implemented!')
 
@@ -38,10 +40,15 @@ class BIndex:
         return [v > 0 for v in result]
 
     def find(self, query):
-        if self._get_size(query) == 1:
+        num_query = self._get_size(query)
+        if num_query == 1:
             return self._find_fn_single(query).tolist()
         else:
-            raise NotImplementedError('find multiple queries in a batch is not implemented!')
+            q_idx, d_idx = self._find_fn_batch(query, num_query)
+            result = [[] for _ in range(num_query)]
+            for (q, d) in zip(q_idx, d_idx):
+                result[q].append(d)
+            return result
 
     @property
     def statistic(self):
