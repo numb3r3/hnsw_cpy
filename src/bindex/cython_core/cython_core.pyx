@@ -1,4 +1,4 @@
-# cython: language_level=3, wraparound=False, boundscheck=False
+# cython: language_level=3
 
 # noinspection PyUnresolvedReferences
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
@@ -318,4 +318,7 @@ cdef class IndexCore:
         self.bytes_per_vector = bytes_per_vector
 
     def __dealloc__(self):
+        free_post_order(&self.root_node)
+
+    cpdef destroy(self):
         free_post_order(&self.root_node)

@@ -26,10 +26,10 @@ class BIndex:
 
     def _get_size(self, data):
         num_total = int(len(data) / self.bytes_per_vector)
-        self.logger.info(f'input size: {len(data)} bytes; '
-                         f'bytes/vector: {self.bytes_per_vector}; '
-                         f'num vectors: {num_total}; '
-                         f'mode: {self.index_mode}')
+        self.logger.debug(f'input size: {len(data)} bytes; '
+                          f'bytes/vector: {self.bytes_per_vector}; '
+                          f'num vectors: {num_total}; '
+                          f'mode: {self.index_mode}')
         return num_total
 
     def add(self, data):
@@ -61,3 +61,6 @@ class BIndex:
     @property
     def memory_size(self):
         return self.indexer.memory_size
+
+    def destroy(self):
+        self.indexer.destroy()

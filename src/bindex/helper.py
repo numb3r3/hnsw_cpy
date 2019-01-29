@@ -2,6 +2,9 @@ import argparse
 import logging
 import os
 import sys
+import time
+
+from termcolor import colored
 
 
 def set_logger(context, verbose=False):
@@ -65,3 +68,16 @@ def get_run_args(parser_fn=get_args_parser, printed=True):
         param_str = '\n'.join(['%20s = %s' % (k, v) for k, v in sorted(vars(args).items())])
         print('usage: %s\n%20s   %s\n%s\n%s\n' % (' '.join(sys.argv), 'ARG', 'VALUE', '_' * 50, param_str))
     return args
+
+
+class TimeContext:
+    def __init__(self, msg):
+        self._msg = msg
+
+    def __enter__(self):
+        self.start = time.perf_counter()
+        print(self._msg, end=' ...\t', flush=True)
+
+    def __exit__(self, typ, value, traceback):
+        self.duration = time.perf_counter() - self.start
+        print(colored('    [%3.0f secs]' % self.duration, 'green'), flush=True)
