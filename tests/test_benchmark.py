@@ -6,7 +6,8 @@ from bindex import BIndex
 
 
 class TestIndexer(unittest.TestCase):
-    def build_toy_data(self, size, dim):
+    @staticmethod
+    def build_toy_data(size, dim):
         tmp = np.random.randint(1, 255, [size, dim], dtype=np.uint8)
         return {
             'data': tmp.tobytes(),
@@ -16,41 +17,39 @@ class TestIndexer(unittest.TestCase):
         }
 
     def test_index_trie(self):
-        print(f'\nbenchmarking trie indexing')
-        print('data size\ttime(s)\tmemory size')
-        data_size = 256
-        data_dim = 96
-        for j in range(10):
-            toy_data = self.build_toy_data(data_size, data_dim)
-            bt = BIndex(bytes_per_vector=toy_data['bytes'])
-            start_t = time.perf_counter()
-            bt.add(toy_data['data'])
-            print(f'{data_size}\t{time.perf_counter()-start_t}\t{bt.memory_size}')
-            data_size *= 2
+        self._benchmark('trie', 'index')
 
     def test_find_batch(self):
-        self.find_batch_mode('trie')
-        self.find_batch_mode('none')
+        self._benchmark('trie', 'find')
+        self._benchmark('none', 'find')
 
-    def find_batch_mode(self, index_mode):
-        print(f'\nbenchmarking search for mode {index_mode}')
-        print('data size\ttime(s)')
+    def _benchmark(self, index_mode, benchmark_fn, num_repeat=10):
+        print(f'\nbenchmarking {benchmark_fn} for mode {index_mode} (avg. over {num_repeat})')
+        print('data size\tQPS\ttime(s)\tmemory')
         data_size = 256
         query_size = 512
         data_dim = 96
-        avg_time = []
+        time_cost = []
+        mem_size = []
         for j in range(10):
-            for _ in range(5):
+            time_cost.clear()
+            mem_size.clear()
+            for _ in range(num_repeat):
                 toy_data = self.build_toy_data(data_size, data_dim)
-                query_data = self.build_toy_data(query_size, data_dim)
                 bt = BIndex(bytes_per_vector=toy_data['bytes'], index_mode=index_mode)
-                bt.add(toy_data['data'])
                 start_t = time.perf_counter()
-                bt.find(query_data['data'])
-                avg_time.append(time.perf_counter() - start_t)
+                bt.add(toy_data['data'])
+                if benchmark_fn == 'find':
+                    query_data = self.build_toy_data(query_size, data_dim)['data']
+                    start_t = time.perf_counter()
+                    bt.find(query_data)
+                time_cost.append(time.perf_counter() - start_t)
+                mem_size.append(bt.memory_size)
                 bt.destroy()
-            print(f'{data_size}\t{np.mean(avg_time)}')
-            avg_time.clear()
+            t_avg = np.mean(time_cost)
+            m_avg = int(np.mean(mem_size))
+            qps = int((query_size if benchmark_fn == 'find' else data_size) / t_avg)
+            print(f'{data_size}\t{qps}\t{t_avg}\t{m_avg}')
             data_size *= 2
 
 

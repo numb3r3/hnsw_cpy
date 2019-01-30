@@ -4,7 +4,9 @@ from setuptools.extension import Extension
 
 extensions = [
     Extension(
-        'bindex.cython_core', ['bindex/cython_core/cython_core.pyx'],
+        'bindex.cython_core',
+        ['bindex/cython_core/cython_core.pyx'],
+        extra_compile_args=['-O3'],
     ),
 ]
 
