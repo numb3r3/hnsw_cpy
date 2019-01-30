@@ -8,6 +8,15 @@ __version__ = '0.0.1'
 
 class BIndex:
     def __init__(self, bytes_per_vector, index_mode='trie', verbose=False):
+        """ An index object for storing and searching bytes vectors
+
+        :type bytes_per_vector: int
+        :type index_mode: str
+        :type verbose: bool
+        :param bytes_per_vector: number of bytes per vector
+        :param index_mode: storage model, choose from "trie" and "none"
+        :param verbose: enables extra logging
+        """
         self.logger = set_logger('BIndex', verbose)
         self.bytes_per_vector = bytes_per_vector
         self.indexer = IndexCore(bytes_per_vector)
