@@ -46,7 +46,7 @@ cdef unsigned long get_memory_size(Node*node):
     cur_size = 0
     if node:
         if node.value:
-            cur_size += sizeof(unsigned long) * (node.value[1] + 2)
+            cur_size += sizeof(UIDX) * (node.value[1] + 2)
         cur_size += sizeof(node[0])
         cur_size += get_memory_size(node.child)
         cur_size += get_memory_size(node.left)
