@@ -17,6 +17,7 @@ class TestIndexer(unittest.TestCase):
 
     def test_index_trie(self):
         print(f'\nbenchmarking trie indexing')
+        print('data size\ttime(s)\tmemory size')
         data_size = 256
         data_dim = 96
         for j in range(10):
@@ -24,7 +25,7 @@ class TestIndexer(unittest.TestCase):
             bt = BIndex(bytes_per_vector=toy_data['bytes'])
             start_t = time.perf_counter()
             bt.add(toy_data['data'])
-            print(f'{data_size}\t{time.perf_counter()-start_t}')
+            print(f'{data_size}\t{time.perf_counter()-start_t}\t{bt.memory_size}')
             data_size *= 2
 
     def test_find_batch(self):
@@ -33,8 +34,9 @@ class TestIndexer(unittest.TestCase):
 
     def find_batch_mode(self, index_mode):
         print(f'\nbenchmarking search for mode {index_mode}')
+        print('data size\ttime(s)')
         data_size = 256
-        query_size = 256
+        query_size = 512
         data_dim = 96
         avg_time = []
         for j in range(10):

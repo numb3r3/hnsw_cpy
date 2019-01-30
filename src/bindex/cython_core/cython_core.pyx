@@ -39,14 +39,17 @@ cdef void free_post_order(Node*node):
         PyMem_Free(node.child)
         node.child = NULL
 
-cdef void get_memory_size(Node*node, unsigned long*num_bytes):
+cdef unsigned long get_memory_size(Node*node):
+    cdef unsigned long cur_size
+    cur_size = 0
     if node:
-        get_memory_size(node.child, num_bytes)
-        get_memory_size(node.left, num_bytes)
-        get_memory_size(node.right, num_bytes)
         if node.value:
-            num_bytes[0] += sizeof(node.value)
-        num_bytes[0] += sizeof(node)
+            cur_size += sizeof(unsigned long) * (node.value[1] + 2)
+        cur_size += sizeof(node[0])
+        cur_size += get_memory_size(node.child)
+        cur_size += get_memory_size(node.left)
+        cur_size += get_memory_size(node.right)
+    return cur_size
 
 cdef class IndexCore:
     cdef Node*root_node
@@ -54,12 +57,6 @@ cdef class IndexCore:
     cdef Counter cnt
     cdef unsigned short bytes_per_vector
     cdef unsigned char*_chunk_data
-
-    cdef unsigned long get_memory_size(self):
-        cdef unsigned long mem_usg
-        mem_usg = 0
-        get_memory_size(self.root_node, &mem_usg)
-        return mem_usg
 
     cdef void _index_value(self, Node*node):
         if node.value and node.value[0] == node.value[1]:
@@ -321,7 +318,7 @@ cdef class IndexCore:
 
     @property
     def memory_size(self):
-        return self.get_memory_size()
+        return get_memory_size(self.root_node)
 
     def __cinit__(self, bytes_per_vector):
         self.alloc_size_per_time = 200
