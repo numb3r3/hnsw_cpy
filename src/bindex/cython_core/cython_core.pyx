@@ -5,6 +5,7 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from cpython cimport array
 
 ctypedef unsigned int UIDX
+DEF alloc_size_per_time = 200
 
 cdef struct Node:
     Node*left
@@ -55,7 +56,6 @@ cdef unsigned long get_memory_size(Node*node):
 
 cdef class IndexCore:
     cdef Node*root_node
-    cdef unsigned short alloc_size_per_time
     cdef Counter cnt
     cdef unsigned short bytes_per_vector
     cdef unsigned char*_chunk_data
@@ -64,17 +64,17 @@ cdef class IndexCore:
         if node.value and node.value[0] == node.value[1]:
             new_value = <UIDX*> PyMem_Realloc(node.value,
                                               (node.value[
-                                                   1] + self.alloc_size_per_time) * sizeof(UIDX))
+                                                   1] + alloc_size_per_time) * sizeof(UIDX))
             if not new_value:
                 raise MemoryError()
             node.value = new_value
-            node.value[1] += self.alloc_size_per_time
+            node.value[1] += alloc_size_per_time
         elif not node.value:
-            node.value = <UIDX*> PyMem_Malloc(self.alloc_size_per_time * sizeof(UIDX))
+            node.value = <UIDX*> PyMem_Malloc(alloc_size_per_time * sizeof(UIDX))
             if not node.value:
                 raise MemoryError()
             node.value[0] = 0
-            node.value[1] = self.alloc_size_per_time - 2  # first two are reserved for counting
+            node.value[1] = alloc_size_per_time - 2  # first two are reserved for counting
             self.cnt.num_unique_keys += 1
         (node.value + node.value[0] + 2)[0] = self.cnt.num_total_keys
         node.value[0] += 1
@@ -280,6 +280,10 @@ cdef class IndexCore:
         cdef Node*node
         cdef UIDX _0
         cdef unsigned short _1
+
+        if not self.root_node:
+            self.root_node = create_node()
+
         for _0 in range(num_total):
             node = self.root_node
             for _1 in range(self.bytes_per_vector):
@@ -306,6 +310,8 @@ cdef class IndexCore:
         free_post_order(self.root_node)
         PyMem_Free(self.root_node)
         self.root_node = NULL
+        self.cnt.num_total_keys = 0
+        self.cnt.num_unique_keys = 0
 
     @property
     def counter(self):
@@ -323,9 +329,7 @@ cdef class IndexCore:
         return get_memory_size(self.root_node)
 
     def __cinit__(self, bytes_per_vector):
-        self.alloc_size_per_time = 200
         self.bytes_per_vector = bytes_per_vector
-        self.root_node = create_node()
 
     def __dealloc__(self):
         self.free_trie()

@@ -23,7 +23,7 @@ class TestIndexer(unittest.TestCase):
         self._benchmark('trie', 'find')
         self._benchmark('none', 'find')
 
-    def _benchmark(self, index_mode, benchmark_fn, num_repeat=10):
+    def _benchmark(self, index_mode, benchmark_fn, num_repeat=5):
         print(f'\nbenchmarking {benchmark_fn} for mode {index_mode} (avg. over {num_repeat})')
         print('data size\tQPS\ttime(s)\tmemory')
         data_size = 256
@@ -45,7 +45,7 @@ class TestIndexer(unittest.TestCase):
                     bt.find(query_data)
                 time_cost.append(time.perf_counter() - start_t)
                 mem_size.append(bt.memory_size)
-                bt.destroy()
+                bt.clear()
             t_avg = np.mean(time_cost)
             m_avg = int(np.mean(mem_size))
             qps = int((query_size if benchmark_fn == 'find' else data_size) / t_avg)

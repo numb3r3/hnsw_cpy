@@ -30,9 +30,9 @@ class TestIndexer(unittest.TestCase):
         bt = BIndex(bytes_per_vector=toy_data['bytes'])
         bt.add(toy_data['data'])
         print(f'size of the tree: {bt.memory_size} bytes')
-        self.assertEqual(bt.statistic['num_keys'], toy_data['num_keys'],
+        self.assertEqual(toy_data['num_keys'], bt.statistic['num_keys'],
                          'number of total keys is not correct!')
-        self.assertEqual(bt.statistic['num_unique_keys'], toy_data['num_unique_keys'],
+        self.assertEqual(toy_data['num_unique_keys'], bt.statistic['num_unique_keys'],
                          'number of unique keys is not correct!')
 
     def test_basic(self):
@@ -40,6 +40,23 @@ class TestIndexer(unittest.TestCase):
 
     def test_random(self):
         self._test_toy_data(self.toy_data2)
+
+    def test_add(self):
+        bt = BIndex(bytes_per_vector=4)
+        bt.add(bytes([1, 2, 3, 4,
+                      5, 6, 7, 8]))
+        bt.add(bytes([1, 2, 3, 4]))
+        self.assertEqual((3, 4), bt.shape)
+
+    def test_destroy(self):
+        bt = BIndex(bytes_per_vector=4)
+        bt.add(bytes([1, 2, 3, 4,
+                      5, 6, 7, 8]))
+        bt.clear()
+        self.assertEqual((0, 4), bt.shape)
+        bt.add(bytes([1, 2, 3, 4,
+                      5, 6, 7, 8]))
+        self.assertEqual((2, 4), bt.shape)
 
 
 if __name__ == '__main__':
