@@ -15,5 +15,12 @@ setup(
     packages=find_packages(),
     ext_modules=cythonize(extensions),
     version='0.0.1',
-    zip_safe=False
+    zip_safe=False,
+    install_requires=[
+        'Cython',
+        'termcolor>=1.1'
+    ],
+    extras_require={
+        'test': ['numpy'],
+    },
 )
