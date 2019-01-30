@@ -1,4 +1,4 @@
-# cython: language_level=3
+# cython: language_level=3, wraparound=False, boundscheck=False
 
 # noinspection PyUnresolvedReferences
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
@@ -24,15 +24,20 @@ cdef Node*create_node():
     node.key = 0
     return node
 
+
 cdef void free_post_order(Node*node):
     if node:
         free_post_order(node.child)
         free_post_order(node.left)
         free_post_order(node.right)
         PyMem_Free(node.value)
-        PyMem_Free(node.child)
-        PyMem_Free(node.left)
+        node.value = NULL
         PyMem_Free(node.right)
+        node.right = NULL
+        PyMem_Free(node.left)
+        node.left = NULL
+        PyMem_Free(node.child)
+        node.child = NULL
 
 cdef void get_memory_size(Node*node, unsigned long*num_bytes):
     if node:
@@ -44,7 +49,7 @@ cdef void get_memory_size(Node*node, unsigned long*num_bytes):
         num_bytes[0] += sizeof(node)
 
 cdef class IndexCore:
-    cdef Node root_node
+    cdef Node*root_node
     cdef unsigned short alloc_size_per_time
     cdef Counter cnt
     cdef unsigned short bytes_per_vector
@@ -53,7 +58,7 @@ cdef class IndexCore:
     cdef unsigned long get_memory_size(self):
         cdef unsigned long mem_usg
         mem_usg = 0
-        get_memory_size(&self.root_node, &mem_usg)
+        get_memory_size(self.root_node, &mem_usg)
         return mem_usg
 
     cdef void _index_value(self, Node*node):
@@ -156,7 +161,7 @@ cdef class IndexCore:
         cdef unsigned char is_match
         q_pt = query
         for _0 in range(num_query):
-            node = &self.root_node
+            node = self.root_node
             is_match = 1
             for _1 in range(self.bytes_per_vector):
                 key = q_pt[_1]
@@ -197,7 +202,7 @@ cdef class IndexCore:
         cdef unsigned short _1
         cdef unsigned long _2
         cdef unsigned char is_match
-        node = &self.root_node
+        node = self.root_node
         is_match = 1
         for _1 in range(self.bytes_per_vector):
             key = query[_1]
@@ -239,7 +244,7 @@ cdef class IndexCore:
         cdef unsigned char is_match
         q_pt = query
         for _0 in range(num_query):
-            node = &self.root_node
+            node = self.root_node
             is_match = 1
             for _1 in range(self.bytes_per_vector):
                 key = q_pt[_1]
@@ -277,7 +282,7 @@ cdef class IndexCore:
         cdef unsigned long _0
         cdef unsigned short _1
         for _0 in range(num_total):
-            node = &self.root_node
+            node = self.root_node
             for _1 in range(self.bytes_per_vector):
                 key = data[_1]
                 while node:
@@ -298,6 +303,11 @@ cdef class IndexCore:
             self._index_value(node)
             data += self.bytes_per_vector
 
+    cdef void free_trie(self):
+        free_post_order(self.root_node)
+        PyMem_Free(self.root_node)
+        self.root_node = NULL
+
     @property
     def counter(self):
         return {
@@ -314,11 +324,12 @@ cdef class IndexCore:
         return self.get_memory_size()
 
     def __cinit__(self, bytes_per_vector):
-        self.alloc_size_per_time = 100
+        self.alloc_size_per_time = 200
         self.bytes_per_vector = bytes_per_vector
+        self.root_node = create_node()
 
     def __dealloc__(self):
-        free_post_order(&self.root_node)
+        self.free_trie()
 
     cpdef destroy(self):
-        free_post_order(&self.root_node)
+        self.free_trie()

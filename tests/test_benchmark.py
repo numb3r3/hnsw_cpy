@@ -15,15 +15,16 @@ class TestIndexer(unittest.TestCase):
             'num_unique_keys': np.unique(tmp, axis=0).shape[0]
         }
 
-    def _test_index_trie(self):
+    def test_index_trie(self):
+        print(f'\nbenchmarking trie indexing')
         data_size = 256
-        data_dim = 256
+        data_dim = 96
         for j in range(10):
             toy_data = self.build_toy_data(data_size, data_dim)
             bt = BIndex(bytes_per_vector=toy_data['bytes'])
             start_t = time.perf_counter()
             bt.add(toy_data['data'])
-            print(f'indexing {data_size}\t{time.perf_counter()-start_t}')
+            print(f'{data_size}\t{time.perf_counter()-start_t}')
             data_size *= 2
 
     def test_find_batch(self):
@@ -31,10 +32,10 @@ class TestIndexer(unittest.TestCase):
         self.find_batch_mode('none')
 
     def find_batch_mode(self, index_mode):
-        print(f'benchmarking search for mode {index_mode}')
+        print(f'\nbenchmarking search for mode {index_mode}')
         data_size = 256
         query_size = 256
-        data_dim = 256
+        data_dim = 96
         avg_time = []
         for j in range(10):
             for _ in range(5):
@@ -45,6 +46,7 @@ class TestIndexer(unittest.TestCase):
                 start_t = time.perf_counter()
                 bt.find(query_data['data'])
                 avg_time.append(time.perf_counter() - start_t)
+                bt.destroy()
             print(f'{data_size}\t{np.mean(avg_time)}')
             avg_time.clear()
             data_size *= 2
