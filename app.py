@@ -8,8 +8,8 @@ if __name__ == '__main__':
 
     num_vector = 8192
     print('data size\tQPS\ttime(s)\tmemory\tunique keys\tunique rate')
+    bt = BIndex(args.bytes_per_vector)
     for _ in range(10):
-        bt = BIndex(args.bytes_per_vector)
         start_t = time.perf_counter()
         bt.add(args.binary_file.read(), num_rows=num_vector)
         t_avg = time.perf_counter() - start_t
@@ -18,3 +18,4 @@ if __name__ == '__main__':
         qps = int(num_vector / t_avg)
         print(f'{num_vector}\t{qps}\t{t_avg}\t{m_avg}\t{bt.statistic["num_unique_keys"]}\t{unique_rate}')
         num_vector *= 2
+        bt.clear()
