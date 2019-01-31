@@ -63,8 +63,7 @@ cdef class IndexCore:
     cdef void _index_value(self, Node*node):
         if node.value and node.value[0] == node.value[1]:
             new_value = <UIDX*> PyMem_Realloc(node.value,
-                                              (node.value[
-                                                   1] + alloc_size_per_time) * sizeof(UIDX))
+                                              (node.value[1] + alloc_size_per_time + 2) * sizeof(UIDX))
             if not new_value:
                 raise MemoryError()
             node.value = new_value
