@@ -49,11 +49,15 @@ def get_args_parser():
 
     group1 = parser.add_argument_group('Index options',
                                        'config index input, vector size, etc.')
-    group1.add_argument('-binary_file', type=argparse.FileType('rb'), required=True,
+    group1.add_argument('-data_file', type=argparse.FileType('rb'), required=True,
                         help='the path of the binary file to be indexed')
+    group1.add_argument('-query_file', type=argparse.FileType('rb'), required=True,
+                        help='the path of the binary file to be queried')
     group1.add_argument('-bytes_per_vector', type=int, required=True,
                         help='number of bytes per vector')
-    group1.add_argument('-num_vector', type=int, default=None,
+    group1.add_argument('-num_data', type=int, default=None,
+                        help='maximum number of vector to query')
+    group1.add_argument('-num_query', type=int, default=None,
                         help='maximum number of vector to index')
     group1.add_argument('-index_mode', type=str, choices=['none', 'trie'], default='trie',
                         help='indexing mode')
