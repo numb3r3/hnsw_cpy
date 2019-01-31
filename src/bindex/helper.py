@@ -53,6 +53,8 @@ def get_args_parser():
                         help='the path of the binary file to be indexed')
     group1.add_argument('-bytes_per_vector', type=int, required=True,
                         help='number of bytes per vector')
+    group1.add_argument('-num_vector', type=int, default=None,
+                        help='maximum number of vector to index')
     group1.add_argument('-index_mode', type=str, choices=['none', 'trie'], default='trie',
                         help='indexing mode')
 
@@ -80,4 +82,4 @@ class TimeContext:
 
     def __exit__(self, typ, value, traceback):
         self.duration = time.perf_counter() - self.start
-        print(colored('    [%3.0f secs]' % self.duration, 'green'), flush=True)
+        print(colored('    [%3.3f secs]' % self.duration, 'green'), flush=True)
