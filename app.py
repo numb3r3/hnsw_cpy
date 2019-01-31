@@ -9,6 +9,6 @@ if __name__ == '__main__':
 
     with TimeContext('searching query'):
         r = bt.find(args.query_file.read(), args.num_query)
-        for l in r:
-            if 1 < len(l) < 20:
-                print("sed -ne '%s train.1000w.txt" % ';'.join([str(v + 1) + 'p' for v in l]))
+    for l in r:
+        if 1 < len(l) < 20:
+            print("sed -ne '%s train.1000w.txt" % ';'.join([str(v + 1) + 'p' for v in l]))
