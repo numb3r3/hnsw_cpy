@@ -17,30 +17,29 @@ class TestIndexer(unittest.TestCase):
         }
 
     def test_index_trie(self):
-        self._benchmark('trie', 'index')
+        self._benchmark('trie', 'index', self.build_toy_data, self.build_toy_data)
 
     def test_find_batch(self):
-        self._benchmark('trie', 'find')
-        self._benchmark('none', 'find')
+        self._benchmark('trie', 'find', self.build_toy_data, self.build_toy_data)
+        self._benchmark('none', 'find', self.build_toy_data, self.build_toy_data)
 
-    def _benchmark(self, index_mode, benchmark_fn, num_repeat=5):
+    def _benchmark(self, index_mode, benchmark_fn, data_gen_fn, query_gen_fn,
+                   num_repeat=3, data_size=16384, data_dim=12):
         print(f'\nbenchmarking {benchmark_fn} for mode {index_mode} (avg. over {num_repeat})')
         print('data size\tQPS\ttime(s)\tmemory')
-        data_size = 256
         query_size = 512
-        data_dim = 96
         time_cost = []
         mem_size = []
         for j in range(10):
             time_cost.clear()
             mem_size.clear()
             for _ in range(num_repeat):
-                toy_data = self.build_toy_data(data_size, data_dim)
+                toy_data = data_gen_fn(data_size, data_dim)
                 bt = BIndex(bytes_per_vector=toy_data['bytes'], index_mode=index_mode)
                 start_t = time.perf_counter()
                 bt.add(toy_data['data'])
                 if benchmark_fn == 'find':
-                    query_data = self.build_toy_data(query_size, data_dim)['data']
+                    query_data = query_gen_fn(query_size, data_dim)['data']
                     start_t = time.perf_counter()
                     bt.find(query_data)
                 time_cost.append(time.perf_counter() - start_t)
