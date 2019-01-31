@@ -61,6 +61,8 @@ def get_args_parser():
                         help='maximum number of vector to index')
     group1.add_argument('-index_mode', type=str, choices=['none', 'trie'], default='trie',
                         help='indexing mode')
+    group1.add_argument('-txt_file', type=str, default='train.wechat.txt',
+                        help='text file name')
 
     parser.add_argument('-verbose', action='store_true', default=False,
                         help='turn on additional logging for debug')
