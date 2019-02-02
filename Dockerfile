@@ -14,7 +14,4 @@ ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
 
-RUN pip install pip setuptools -U
-
-ENV PIP_FIND_LINKS "http://pypi.open.oa.com/simple/"
-ENV PIP_TRUSTED_HOST "pypi.open.oa.com"
+RUN pip install pip setuptools numpy -U
