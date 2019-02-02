@@ -23,4 +23,7 @@ setup(
     extras_require={
         'test': ['numpy'],
     },
+    dependency_links=[
+        'http://pypi.open.oa.com/simple/'
+    ]
 )

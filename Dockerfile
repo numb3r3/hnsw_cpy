@@ -6,8 +6,7 @@ WORKDIR /
 
 RUN apt-get -y update && \
     apt-get clean && \
+    apt-get install pico && \
     rm -rf /var/lib/apt/lists/*
-
-ADD . /
 
 RUN pip install pip -U
