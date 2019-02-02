@@ -60,10 +60,10 @@ class TestIndexer(unittest.TestCase):
         self._test_toy_data(self.toy2, 'trie')
 
     def test_basic_large(self):
-        self._test_toy_data(self.toy, 'none')
+        self._test_toy_data(self.toy3, 'none')
 
     def test_trie_large(self):
-        self._test_toy_data(self.toy2, 'trie')
+        self._test_toy_data(self.toy3, 'trie')
 
 
 if __name__ == '__main__':

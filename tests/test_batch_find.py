@@ -62,7 +62,7 @@ class TestIndexer(unittest.TestCase):
 
     def test_trie_empty(self):
         self._test_toy_data(self.toy2, 'trie')
-    #
+
     # def test_basic_large(self):
     #     self._test_toy_data(self.toy3, 'none')
     #
