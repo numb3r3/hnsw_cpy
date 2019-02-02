@@ -15,8 +15,16 @@ pip install src/.
 To run all unit tests:
 
 ```bash
+pip install src/.[test]
 python -m unittest tests/*.py
 ```
+
+## Lint
+
+```bash
+pylint src/**/*.py
+```
+
 
 ## Usage
 
