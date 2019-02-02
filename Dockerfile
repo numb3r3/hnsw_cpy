@@ -6,7 +6,7 @@ WORKDIR /
 
 RUN apt-get -y update && \
     apt-get clean && \
-    apt-get install pico && \
+    apt-get install nano && \
     rm -rf /var/lib/apt/lists/*
 
 RUN pip install pip -U
