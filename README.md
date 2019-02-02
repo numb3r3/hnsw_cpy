@@ -1,5 +1,7 @@
 # BTIndex
 
+[![BK Pipelines Status](https://api.bkdevops.qq.com/process/api/external/pipelines/projects/btindex/p-9e8e4c8ef61242b49b66a83b1b712e11/badge?X-DEVOPS-PROJECT-ID=btindex)](http://api.devops.oa.com/process/api-html/user/builds/projects/btindex/pipelines/p-9e8e4c8ef61242b49b66a83b1b712e11/latestFinished?X-DEVOPS-PROJECT-ID=btindex)
+
 A scalable binary vector index in Cython.
 
 ## Install
