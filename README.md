@@ -5,7 +5,7 @@ A scalable binary vector index in Cython.
 ## Install
 
 ```bash
-pip install src/. -U
+pip install src/.
 ```
 
 ## Test

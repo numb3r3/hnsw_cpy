@@ -24,13 +24,13 @@ class TestIndexer(unittest.TestCase):
         self._benchmark('none', 'find', self.build_toy_data, self.build_toy_data)
 
     def _benchmark(self, index_mode, benchmark_fn, data_gen_fn, query_gen_fn,
-                   num_repeat=3, data_size=16384, data_dim=12, max_iter=5):
+                   num_repeat=3, data_size=16384, data_dim=12):
         print(f'\nbenchmarking {benchmark_fn} for mode {index_mode} (avg. over {num_repeat})')
         print('data size\tQPS\ttime(s)\tmemory')
         query_size = 512
         time_cost = []
         mem_size = []
-        for j in range(max_iter):
+        for j in range(max_iters):
             time_cost.clear()
             mem_size.clear()
             for _ in range(num_repeat):
