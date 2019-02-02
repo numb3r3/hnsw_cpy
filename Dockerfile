@@ -4,8 +4,15 @@ MAINTAINER han.xiao@tencent.com
 
 RUN apt-get -y update && \
     apt-get clean && \
-    apt-get install nano less && \
+    apt-get -y install nano less locales && \
     rm -rf /var/lib/apt/lists/*
+
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
+    locale-gen
+
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV LC_ALL en_US.UTF-8
 
 RUN pip install pip setuptools -U
 
