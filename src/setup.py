@@ -21,6 +21,6 @@ setup(
         'termcolor>=1.1'
     ],
     extras_require={
-        'test': ['numpy', 'pylint'],
+        'test': ['numpy'],
     },
 )
