@@ -28,7 +28,7 @@ pylint src/**/*.py
 
 ## Usage
 
-Three core functions: `add`, `find`, `contains`.
+Three core functions: `add()`, `find()`, `contains()`.
 
 ```python
 from bindex import BIndex
