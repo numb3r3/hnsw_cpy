@@ -1,5 +1,8 @@
+import os
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
+
+root = os.path.abspath(os.path.dirname(__file__))
 
 setup(
     name='bindex',
@@ -16,9 +19,21 @@ setup(
             ['bindex/cython_core/cython_core.pyx'],
             extra_compile_args=['-O3'],
         ),
+        Extension(
+            'bindex.cython_hnsw.hnsw',
+            ['bindex/cython_hnsw/hnsw.pyx'],
+            extra_compile_args=['-O3'],
+            language="c++",
+        ),
+        Extension(
+            'bindex.cython_hnsw.utils',
+            ['bindex/cython_hnsw/utils.pyx'],
+            extra_compile_args=['-O3'],
+        ),
     ],
     install_requires=[
-        'termcolor>=1.1'
+        'termcolor>=1.1',
+        'cymem>=2.0.0'
     ],
     extras_require={
         'test': ['numpy'],
