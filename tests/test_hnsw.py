@@ -3,6 +3,7 @@ import unittest
 
 import numpy as np
 from bindex.hnsw import HnswIndex
+from bindex.cython_hnsw.hnsw import hamming_dist
 
 
 class TestHnswIndex(unittest.TestCase):
@@ -45,6 +46,18 @@ class TestHnswIndex(unittest.TestCase):
             'query': query.tobytes(),
             'expect': result
         }
+
+    def test_hamming(self):
+        x = bytes([1, 2, 3, 4])
+        y = bytes([1, 2, 3, 5])
+        z = bytes([2, 3, 5, 1])
+        dist0 = hamming_dist(x, x)
+        dist1 = hamming_dist(x, y)
+        dist2 = hamming_dist(x, z)
+        self.assertEqual(dist0, 0)
+        self.assertEqual(dist1, 1)
+        self.assertEqual(dist2, 7)
+
 
 
     def test_add_data(self):
