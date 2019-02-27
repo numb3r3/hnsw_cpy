@@ -59,7 +59,6 @@ class TestHnswIndex(unittest.TestCase):
         self.assertEqual(dist2, 7)
 
 
-
     def test_add_data(self):
         hsw = HnswIndex(self.toy1['bytes'])
         self.assertEqual(hsw.bytes_per_vector, self.toy1['bytes'])
