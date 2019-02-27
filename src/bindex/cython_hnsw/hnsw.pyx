@@ -66,7 +66,6 @@ cdef hnswNode* create_node(UIDX id, unsigned int level, unsigned char *key):
 
 cdef void _add_edge(hnswNode* f, hnswNode* t, unsigned short dist, unsigned int level):
     cdef hnsw_edge* edge = <hnsw_edge*> malloc(sizeof(hnsw_edge))
-    cdef hnsw_edge* tmp
     edge.node_id = t.id
     edge.dist = dist
     edge.next = NULL
