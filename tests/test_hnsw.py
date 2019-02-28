@@ -47,6 +47,11 @@ class TestHnswIndex(unittest.TestCase):
             'expect': result
         }
 
+        self.hnsw_toy1 = HnswIndex(self.toy1['bytes'])
+
+        self.hnsw_toy1.add(self.toy1['data'])
+
+
     def test_hamming(self):
         x = bytes([1, 2, 3, 4])
         y = bytes([1, 2, 3, 5])
@@ -60,10 +65,12 @@ class TestHnswIndex(unittest.TestCase):
 
 
     def test_add_data(self):
-        hsw = HnswIndex(self.toy1['bytes'])
-        self.assertEqual(hsw.bytes_per_vector, self.toy1['bytes'])
-        hsw.add(self.toy1['data'])
-        self.assertEqual(hsw.size, 8)
+        self.assertEqual(self.hnsw_toy1.bytes_per_vector, self.toy1['bytes'])
+        self.assertEqual(self.hnsw_toy1.size, 8)
+
+    def test_query(self):
+        result = self.hnsw_toy1.find(self.toy1['query'])
+        print(result)
 
 
 if __name__ == '__main__':

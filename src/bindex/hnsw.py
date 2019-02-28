@@ -79,10 +79,10 @@ class HnswIndex:
         if num_rows == 1:
             return self._find_fn_single(query).tolist()
         else:
-            q_idx, d_idx = self._find_fn_batch(query, num_rows)
-            result = [[] for _ in range(num_rows)]
-            for (q, d) in zip(q_idx, d_idx):
-                result[q].append(d)
+            result = self._find_fn_batch(query, num_rows)
+            #result = [[] for _ in range(num_rows)]
+            #for (q, d) in zip(q_idx, d_idx):
+            #    result[q].append(d)
             return result
 
     @property

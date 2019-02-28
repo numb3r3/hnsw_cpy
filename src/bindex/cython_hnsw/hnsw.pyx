@@ -97,7 +97,6 @@ cdef bytes _c2bytes(unsigned char* data):
 
 
 cpdef unsigned short hamming_dist(unsigned char *x, unsigned char *y):
-
      cdef bytes x_bytes = _c2bytes(x)
      cdef bytes y_bytes = _c2bytes(y)
 
@@ -268,10 +267,52 @@ cdef class IndexHnsw:
         return int(f)
 
     cpdef query(self, unsigned char *query):
-        return None
+        #cdef array.array final_result = array.array('L')
+        #cdef array.array final_idx = array.array('L')
+
+        cdef hnswNode* entry_ptr = self.entry_ptr
+        cdef unsigned short min_dist = hamming_dist(query, entry_ptr.key)
+        cdef unsigned int l = self.max_level
+        cdef UIDX entry_id = entry_ptr.id
+        while l > 0:
+            entry_id, min_dist = self.greedy_closest_neighbor(query, entry_ptr, min_dist, l)
+            entry_ptr = self.nodes[entry_id]
+            l -= 1
+
+        neighbors = self.search_level(query, entry_ptr, 0)
+
+
+        #result_size = 0
+        result = []
+        while not neighbors.empty():
+            dist, item = neighbors.pop()
+            node = self.nodes[item[0]]
+            #final_result.append(node.key)
+            #final_idx.append(item[0])
+            result.append({
+                'id': item[0],
+                'vector': node.key,
+                'distance': dist
+            })
+
+        return result
 
     cpdef batch_query(self, unsigned char *query, const UIDX num_query):
-        return None
+        #cdef array.array final_result = array.array('L')
+        #cdef array.array final_idx = array.array('L')
+        cdef UIDX _0
+        cdef unsigned short _1
+        cdef unsigned char *q_key = <unsigned char*> self.mem.alloc(self.bytes_per_vector, 8)
+        result = []
+        for _0 in range(num_query):
+            for _1 in range(self.bytes_per_vector):
+                q_key[_1] = query[_1]
+            q_result = self.query(q_key)
+            result.append(q_result)
+
+            query += self.bytes_per_vector
+
+        return result
 
     cpdef void save_model(self, model_path):
         pass
