@@ -5,20 +5,6 @@ cimport cpython
 
 cdef unsigned int BUCKET_CAPACITY = 10000
 
-ctypedef void* _value
-
-cdef struct _bucket:
-    _value* data
-    unsigned int capacity
-    unsigned int offset
-    unsigned int size
-
-
-cdef struct prehash_map:
-    _bucket** buckets
-    unsigned int bucket_count
-    unsigned int total_size
-
 cdef _bucket* _new_bucket(unsigned int capacity, unsigned int offset):
     cdef _bucket* bucket = <_bucket*> malloc(sizeof(_bucket))
     bucket.data = <_value*> malloc(sizeof(_value)*capacity)
