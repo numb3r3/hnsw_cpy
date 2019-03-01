@@ -1,7 +1,7 @@
 import ctypes
 
-from bindex.cython_hnsw.hnsw import IndexHnsw
-from bindex.helper import set_logger
+from hnsw_cpy.cython_hnsw.hnsw import IndexHnsw
+from hnsw_cpy.helper import set_logger
 
 __version__ = '0.0.1'
 
@@ -72,7 +72,7 @@ class HnswIndex:
         self._index_fn(data, num_rows)
 
 
-    def find(self, query, num_rows=None):
+    def query(self, query, num_rows=None):
         if not num_rows:
             num_rows = self._get_size(query)
 
