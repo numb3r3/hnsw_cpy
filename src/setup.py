@@ -5,7 +5,7 @@ from setuptools.extension import Extension
 root = os.path.abspath(os.path.dirname(__file__))
 
 setup(
-    name='bindex',
+    name='hnsw_cpy',
     packages=find_packages(),
     version='0.0.1',
     zip_safe=False,
@@ -15,19 +15,14 @@ setup(
     ],
     ext_modules=[
         Extension(
-            'bindex.cython_core',
-            ['bindex/cython_core/cython_core.pyx'],
-            extra_compile_args=['-O3'],
-        ),
-        Extension(
-            'bindex.cython_hnsw.hnsw',
-            ['bindex/cython_hnsw/hnsw.pyx'],
+            'hnsw_cpy.cython_hnsw.hnsw',
+            ['hnsw_cpy/cython_hnsw/hnsw.pyx'],
             extra_compile_args=['-O3'],
             language="c++",
         ),
         Extension(
-            'bindex.cython_hnsw.utils',
-            ['bindex/cython_hnsw/utils.pyx'],
+            'hnsw_cpy.cython_hnsw.utils',
+            ['hnsw_cpy/cython_hnsw/utils.pyx'],
             extra_compile_args=['-O3'],
         ),
         Extension(

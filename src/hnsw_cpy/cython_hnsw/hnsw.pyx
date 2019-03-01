@@ -19,7 +19,7 @@ from cython.operator cimport preincrement as preinc
 
 from ctypes import c_ushort
 
-from bindex.cython_hnsw.utils import PriorityQueue
+from hnsw_cpy.cython_hnsw.utils import PriorityQueue
 
 ctypedef unsigned int UIDX
 DEF alloc_size_per_time = 200
