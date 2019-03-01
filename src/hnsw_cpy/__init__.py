@@ -7,6 +7,14 @@ __version__ = '0.0.1'
 
 
 class HnswIndex:
+    """Hierarchical Navigable Small World (HNSW) data structure.
+
+    Based on the work by Yury Malkov and Dmitry Yashunin, available at
+    http://arxiv.org/pdf/1603.09320v2.pdf
+
+    HNSWs allow performing approximate nearest neighbor search with
+    arbitrary data and non-metric dissimilarity functions.
+    """
     def __init__(self, bytes_per_vector, verbose=False):
         """ A HNSW index object for storing and searching bytes vectors
 
