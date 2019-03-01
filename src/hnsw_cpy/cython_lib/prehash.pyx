@@ -1,8 +1,9 @@
 # cython: language_level=3
 
 from libc.stdlib cimport malloc, realloc, free
+cimport cpython
 
-cdef unsigned int _BUCKET_CAPACITY
+cdef unsigned int BUCKET_CAPACITY = 10000
 
 ctypedef void* _value
 
@@ -27,7 +28,7 @@ cdef _bucket* _new_bucket(unsigned int capacity, unsigned int offset):
 
     return bucket
 
-cdef void _bucket_insert(_bucket* bucket, unsinged int id, _value value)
+cdef void _bucket_insert(_bucket* bucket, unsigned int id, _value value):
     bucket.data[id] = value
     bucket.size += 1
 
@@ -41,6 +42,9 @@ cdef void _bucket_delete(_bucket* bucket, unsigned int id):
         bucket.size -= 1
 
 cdef void _bucket_free(_bucket* bucket):
+    if bucket == NULL:
+        return
+
     free(bucket.data)
     free(bucket)
 
@@ -58,12 +62,14 @@ cdef prehash_map* new_prehash_map():
 cdef void prehash_insert(prehash_map* map, unsigned int id, _value value):
      cdef unsigned int bucket_id = _get_bucket_id(id, BUCKET_CAPACITY)
 
+     cdef unsigned int _0 = map.bucket_count
+
      if bucket_id >= map.bucket_count:
          map.buckets = <_bucket**> realloc(map.buckets, sizeof(_bucket*) * (bucket_id+1))
          map.bucket_count = bucket_id+1
-
-     if map.buckets[bucket_id] == NULL:
-         map.buckets[bucket_id] = _new_bucket(BUCKET_CAPACITY, BUCKET_CAPACITY*bucket_id)
+         while _0 < map.bucket_count:
+             map.buckets[_0] = _new_bucket(BUCKET_CAPACITY, BUCKET_CAPACITY*_0)
+             _0 += 1
 
      cdef _bucket* bucket = map.buckets[bucket_id]
 
@@ -72,7 +78,7 @@ cdef void prehash_insert(prehash_map* map, unsigned int id, _value value):
      _bucket_insert(bucket, id, value)
      map.total_size += 1
 
-cdef _value prehash_get(prhash_map* map, unsigned int id):
+cdef _value prehash_get(prehash_map* map, unsigned int id):
     cdef unsigned int bucket_id = _get_bucket_id(id, BUCKET_CAPACITY)
     if bucket_id >= map.bucket_count:
         return NULL
@@ -83,7 +89,7 @@ cdef _value prehash_get(prhash_map* map, unsigned int id):
     return _bucket_get(bucket, id)
 
 cdef void prehash_delete(prehash_map* map, unsigned int id):
-    cdef unsigned int bucket_idx = _get_bucket_id(id, BUCKET_CAPACITY)
+    cdef unsigned int bucket_id = _get_bucket_id(id, BUCKET_CAPACITY)
     if bucket_id >= map.bucket_count:
         return
 
@@ -92,6 +98,7 @@ cdef void prehash_delete(prehash_map* map, unsigned int id):
         return
     id = id - BUCKET_CAPACITY*bucket_id
     _bucket_delete(bucket, id)
+    map.total_size -= 1
 
 
 cdef unsigned int _get_bucket_id(unsigned int id, unsigned int capacity):
@@ -100,6 +107,40 @@ cdef unsigned int _get_bucket_id(unsigned int id, unsigned int capacity):
 
 cdef void prehash_free(prehash_map* hash_map):
     cdef unsigned int i
-    for i in range(hash_map.bucket_size):
-        _bucket_free(prehash_map.buckets[i])
+    cdef _bucket* bucket
+    for i in range(hash_map.bucket_count):
+        _bucket_free(hash_map.buckets[i])
     free(hash_map)
+
+
+
+cdef inline object fromvoidptr(void *a):
+     cdef cpython.PyObject *o
+     o = <cpython.PyObject *> a
+     cpython.Py_XINCREF(o)
+     return <object> o
+
+
+cdef class PrehashMap(object):
+    cdef prehash_map* _map_ptr
+
+    def __cinit__(self):
+        self._map_ptr = new_prehash_map()
+
+    def insert(self, id, data):
+        prehash_insert(self._map_ptr, id, <void*> data)
+
+    def get(self, id):
+        # return fromvoidptr(prehash_get(self._map_ptr, id))
+        cdef _value value = prehash_get(self._map_ptr, id)
+        return <object> <void*> value
+
+    def delete(self, id):
+        prehash_delete(self._map_ptr, id)
+
+    @property
+    def size(self):
+        return self._map_ptr.total_size
+
+    def __dealloc__(self):
+        prehash_free(self._map_ptr)

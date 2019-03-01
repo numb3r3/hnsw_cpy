@@ -26,8 +26,8 @@ setup(
             extra_compile_args=['-O3'],
         ),
         Extension(
-            'bindex.cython_lib',
-            ['bindex/cython_lib/queue.pyx'],
+            'hnsw_cpy.cython_lib.prehash',
+            ['hnsw_cpy/cython_lib/prehash.pyx'],
             extra_compile_args=['-O3'],
         ),
     ],

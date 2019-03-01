@@ -70,7 +70,7 @@ class TestHnswIndex(unittest.TestCase):
 
     def test_query(self):
         result = self.hnsw_toy1.find(self.toy1['query'])
-        print(result)
+        # print(result)
 
 
 if __name__ == '__main__':
