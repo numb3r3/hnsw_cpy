@@ -5,13 +5,13 @@ from libc.stdlib cimport malloc, free
 ctypedef void *queue_value
 
 cdef struct queue_entry:
-	queue_value data
-	queue_entry *prev
-	queue_entry *next
+    queue_value data
+    queue_entry *prev
+    queue_entry *next
 
 cdef struct queue:
     queue_entry *head
-	queue_entry *tail
+    queue_entry *tail
 
 
 cdef queue* new_queue():
@@ -34,22 +34,22 @@ cdef void queue_push_head(queue *q_ptr, queue_value data):
 
     if q_ptr.head == NULL:
         q_ptr.head = entry
-		q_ptr.tail = entry
+        q_ptr.tail = entry
     else:
         q_ptr.head.prev = entry
-	    q_ptr.head = entry
+        q_ptr.head = entry
 
 
 cdef queue_value queue_pop_head(queue *q_ptr):
     cdef queue_entry *entry
-	cdef queue_value result
+    cdef queue_value result
 
-	if queue_is_empty(q_ptr)
-	    return NULL
+    if queue_is_empty(q_ptr):
+        return NULL
 
-	entry = q_ptr.head
-	q_ptr.head = entry.next
-	result = entry.data
+    entry = q_ptr.head
+    q_ptr.head = entry.next
+    result = entry.data
 
     if q_ptr.head == NULL:
         q_ptr.tail = NULL
@@ -58,7 +58,7 @@ cdef queue_value queue_pop_head(queue *q_ptr):
 
     free(entry)
 
-	return result
+    return result
 
 
 cdef queue_value queue_peek_head(queue *q_ptr):
@@ -74,7 +74,7 @@ cdef void queue_push_tail(queue *q_ptr, queue_value data):
     entry.prev = NULL
     entry.next = NULL
 
-    if queue.tail == NULL:
+    if q_ptr.tail == NULL:
         q_ptr.head = entry
         q_ptr.tail = entry
     else:
@@ -106,5 +106,5 @@ cdef queue_value queue_peek_tail(queue* q_ptr):
     else:
         return q_ptr.tail.data
 
-cdef queue_is_empty(queue* q_ptr):
+cdef bint queue_is_empty(queue* q_ptr):
     return q_ptr.head == NULL
