@@ -7,7 +7,10 @@ cdef unsigned int BUCKET_CAPACITY = 10000
 
 cdef _bucket* _new_bucket(unsigned int capacity, unsigned int offset):
     cdef _bucket* bucket = <_bucket*> malloc(sizeof(_bucket))
+    cdef unsigned int _0
     bucket.data = <_value*> malloc(sizeof(_value)*capacity)
+    for _0 in range(capacity):
+        bucket.data[_0] = NULL
     bucket.capacity = capacity
     bucket.offset = offset
     bucket.size += 1
@@ -86,6 +89,13 @@ cdef void prehash_delete(prehash_map* map, unsigned int id):
     _bucket_delete(bucket, id)
     map.total_size -= 1
 
+cdef bint prehash_exist(prehash_map* map, unsigned int id):
+    return prehash_get(map, id) != NULL
+
+
+cdef bint prehash_is_empty(prehash_map* map):
+    return map.total_size == 0
+
 
 cdef unsigned int _get_bucket_id(unsigned int id, unsigned int capacity):
     cdef unsigned int i = int(id / capacity)
@@ -119,10 +129,18 @@ cdef class PrehashMap(object):
     def get(self, id):
         # return fromvoidptr(prehash_get(self._map_ptr, id))
         cdef _value value = prehash_get(self._map_ptr, id)
+        if value == NULL:
+            return None
         return <object> <void*> value
 
     def delete(self, id):
         prehash_delete(self._map_ptr, id)
+
+    def is_empty(self):
+        return prehash_is_empty(self._map_ptr)
+
+    def exist(self, id):
+        return prehash_exist(self._map_ptr, id)
 
     @property
     def size(self):

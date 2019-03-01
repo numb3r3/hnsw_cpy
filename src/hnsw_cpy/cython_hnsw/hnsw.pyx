@@ -8,16 +8,8 @@ from cpython cimport array
 from libc.stdlib cimport malloc, free
 from libc.stdlib cimport rand, RAND_MAX
 from libc.math cimport log, floor
-from libcpp.map cimport map as cpp_map
+
 from libcpp.set cimport set as cpp_set
-from libcpp.vector cimport vector as cpp_vector
-from libcpp.list cimport list as cpp_list
-
-
-from cython.operator cimport dereference as deref
-from cython.operator cimport preincrement as preinc
-
-from ctypes import c_ushort
 
 from hnsw_cpy.cython_hnsw.utils import PriorityQueue
 from hnsw_cpy.cython_lib.prehash cimport prehash_map, prehash_insert, prehash_get

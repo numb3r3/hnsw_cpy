@@ -1,8 +1,5 @@
 # cython: language_level=3
 
-from libc.stdlib cimport malloc, realloc, free
-cimport cpython
-
 ctypedef void* _value
 
 cdef struct _bucket:
@@ -35,4 +32,8 @@ cdef _value prehash_get(prehash_map* map, unsigned int id)
 
 cdef void prehash_delete(prehash_map* map, unsigned int id)
 
-cdef void prehash_free(prehash_map* hash_map)
+cdef bint prehash_exist(prehash_map* map, unsigned int id)
+
+cdef bint prehash_is_empty(prehash_map* map)
+
+cdef void prehash_free(prehash_map* map)

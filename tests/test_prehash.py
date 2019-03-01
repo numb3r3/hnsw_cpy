@@ -31,7 +31,12 @@ class TestPriorityQueue(unittest.TestCase):
         self.hash_map.delete(1)
         self.assertEqual(self.hash_map.size, 4)
 
+    def test_exist(self):
+        self.assertEqual(self.hash_map.exist(3), False)
+        self.assertEqual(self.hash_map.exist(2), True)
 
+    def test_empty(self):
+        self.assertEqual(self.hash_map.is_empty(), False)
 
 if __name__ == '__main__':
     unittest.main()
