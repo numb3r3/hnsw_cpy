@@ -30,6 +30,11 @@ setup(
             ['bindex/cython_hnsw/utils.pyx'],
             extra_compile_args=['-O3'],
         ),
+        Extension(
+            'bindex.cython_lib',
+            ['bindex/cython_lib/queue.pyx'],
+            extra_compile_args=['-O3'],
+        ),
     ],
     install_requires=[
         'termcolor>=1.1',
