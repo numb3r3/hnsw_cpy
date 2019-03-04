@@ -1,14 +1,14 @@
 # cython: language_level=3
 
-from libc.stdlib cimport malloc, realloc, free
+from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 cimport cpython
 
 cdef unsigned int BUCKET_CAPACITY = 10000
 
 cdef _bucket* _new_bucket(unsigned int capacity, unsigned int offset):
-    cdef _bucket* bucket = <_bucket*> malloc(sizeof(_bucket))
+    cdef _bucket* bucket = <_bucket*> PyMem_Malloc(sizeof(_bucket))
     cdef unsigned int _0
-    bucket.data = <_value*> malloc(sizeof(_value)*capacity)
+    bucket.data = <_value*> PyMem_Malloc(sizeof(_value)*capacity)
     for _0 in range(capacity):
         bucket.data[_0] = NULL
     bucket.capacity = capacity
@@ -34,14 +34,14 @@ cdef void _bucket_free(_bucket* bucket):
     if bucket == NULL:
         return
 
-    free(bucket.data)
-    free(bucket)
+    PyMem_Free(bucket.data)
+    PyMem_Free(bucket)
 
 cdef prehash_map* new_prehash_map():
-    cdef prehash_map* map = <prehash_map*> malloc(sizeof(prehash_map))
+    cdef prehash_map* map = <prehash_map*> PyMem_Malloc(sizeof(prehash_map))
     map.total_size = 0
 
-    map.buckets = <_bucket**> malloc(sizeof(_bucket*))
+    map.buckets = <_bucket**> PyMem_Malloc(sizeof(_bucket*))
     map.buckets[0] = _new_bucket(BUCKET_CAPACITY, 0)
     map.bucket_count = 1
 
@@ -54,7 +54,7 @@ cdef void prehash_insert(prehash_map* map, unsigned int id, _value value):
      cdef unsigned int _0 = map.bucket_count
 
      if bucket_id >= map.bucket_count:
-         map.buckets = <_bucket**> realloc(map.buckets, sizeof(_bucket*) * (bucket_id+1))
+         map.buckets = <_bucket**> PyMem_Realloc(map.buckets, sizeof(_bucket*) * (bucket_id+1))
          map.bucket_count = bucket_id+1
          while _0 < map.bucket_count:
              map.buckets[_0] = _new_bucket(BUCKET_CAPACITY, BUCKET_CAPACITY*_0)
@@ -106,7 +106,7 @@ cdef void prehash_free(prehash_map* hash_map):
     cdef _bucket* bucket
     for i in range(hash_map.bucket_count):
         _bucket_free(hash_map.buckets[i])
-    free(hash_map)
+    PyMem_Free(hash_map)
 
 
 

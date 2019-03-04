@@ -323,6 +323,8 @@ cdef class IndexHnsw:
 
             query += self.bytes_per_vector
 
+        PyMem_Free(q_key)
+
         return result
 
     cpdef void save_model(self, model_path):
