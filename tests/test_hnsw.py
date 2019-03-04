@@ -1,55 +1,32 @@
+from typing import List, Tuple
 import random
 import unittest
 
 import numpy as np
-from bindex.hnsw import HnswIndex
-from bindex.cython_hnsw.hnsw import hamming_dist
+from hnsw_cpy import HnswIndex
+from hnsw_cpy.cython_hnsw.hnsw import hamming_dist
 
 
 class TestHnswIndex(unittest.TestCase):
     def setUp(self):
-        self.toy1 = {'data': bytes([1, 2, 3, 4,
-                                    1, 2, 3, 5,
-                                    1, 2, 3, 2,
-                                    1, 2, 3, 4,
-                                    5, 1, 2, 3,
-                                    5, 1, 2, 4,
-                                    5, 1, 2, 3,
-                                    1, 1, 1, 1]),
-                     'query': bytes([1, 2, 3, 4,
-                                     5, 1, 2, 3,
-                                     1, 1, 1, 1]),
-                     'bytes': 4,
-                     'expect': [[0, 3], [4, 6], [7]]}
-
-        self.toy2 = {'data': bytes([1, 2, 3, 4,
-                                    1, 2, 3, 5,
-                                    1, 2, 3, 2,
-                                    1, 2, 3, 4,
-                                    5, 1, 2, 3,
-                                    5, 1, 2, 4,
-                                    5, 1, 2, 3,
-                                    1, 1, 1, 1]),
-                     'query': bytes([5, 6, 7, 8,
-                                     5, 6, 7, 8,
-                                     5, 7, 8, 8]),
-                     'bytes': 4,
-                     'expect': [[], [], []]}
-
-        tmp = np.random.randint(1, 255, [10000, 512], dtype=np.uint8)
-        query = tmp[random.randint(0, 10000)]
-        result = (tmp == query).all(axis=1).nonzero()[0].tolist()
-
-        self.toy3 = {
-            'data': tmp.tobytes(),
-            'bytes': tmp.shape[1],
-            'query': query.tobytes(),
-            'expect': result
+        self.toy_data = {
+            'data': [bytes([1, 2, 3, 4]),
+                     bytes([1, 2, 3, 5]),
+                     bytes([1, 2, 3, 2]),
+                     bytes([1, 2, 3, 4]),
+                     bytes([5, 1, 2, 3]),
+                     bytes([5, 1, 2, 4]),
+                     bytes([5, 1, 2, 3]),
+                     bytes([1, 1, 1, 1])],
+            'query': [bytes([1, 2, 3 ,4]),
+                      bytes([5, 1, 2, 3]),
+                      bytes([1, 1, 1, 1])],
+            'bytes': 4
         }
 
-        self.hnsw_toy1 = HnswIndex(self.toy1['bytes'])
+        self.hnsw_toy = HnswIndex(self.toy_data['bytes'])
 
-        self.hnsw_toy1.add(self.toy1['data'])
+        self.hnsw_toy.bulk_index(self.toy_data['data'], range(8))
 
 
     def test_hamming(self):
@@ -65,12 +42,13 @@ class TestHnswIndex(unittest.TestCase):
 
 
     def test_add_data(self):
-        self.assertEqual(self.hnsw_toy1.bytes_per_vector, self.toy1['bytes'])
-        self.assertEqual(self.hnsw_toy1.size, 8)
+        self.assertEqual(self.hnsw_toy.bytes_per_vector, self.toy_data['bytes'])
+        self.assertEqual(self.hnsw_toy.size, 8)
 
     def test_query(self):
-        result = self.hnsw_toy1.find(self.toy1['query'])
-        # print(result)
+        for query in self.toy_data['query']:
+            result = self.hnsw_toy.query(query, 10)
+            print(result)
 
 
 if __name__ == '__main__':

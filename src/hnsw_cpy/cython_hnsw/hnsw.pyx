@@ -4,7 +4,7 @@
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython cimport array
-#from libc.stdlib cimport malloc, free
+# from libc.stdlib cimport malloc, free
 from libc.stdlib cimport rand, RAND_MAX
 from libc.math cimport log, floor
 
@@ -14,7 +14,7 @@ from hnsw_cpy.cython_hnsw.utils import PriorityQueue
 from hnsw_cpy.cython_lib.prehash cimport prehash_map, prehash_insert, prehash_get
 
 
-cdef hnswNode* create_node(UIDX id, UINT level, BVECTOR vector):
+cdef hnswNode* create_node(UIDX id, USHORT level, BVECTOR vector):
      cdef hnswNode *node = <hnswNode*> PyMem_Malloc(sizeof(hnswNode))
      node.id = id
      node.level = level
@@ -100,9 +100,11 @@ cdef class IndexHnsw:
         self._add_node(id, vector)
 
     cdef hnswNode* _get_node(self, UIDX id):
-        return <hnswNode*> prehash_get(self.nodes_ptr, id)
+        cdef void* value = prehash_get(self.nodes_ptr, id)
+        return <hnswNode*><size_t>value if value != NULL else NULL
 
     cdef void _add_node(self, UIDX id, BVECTOR vector):
+        print('index doc: #' + str(id))
         cdef hnswNode *new_node
         cdef hnswNode* entry_ptr = self.entry_ptr
         self.total_size += 1
@@ -110,20 +112,23 @@ cdef class IndexHnsw:
         if entry_ptr == NULL:
             new_node = create_node(id, 0, vector)
             self.entry_ptr = new_node
-            prehash_insert(self.nodes_ptr, id, new_node)
+            prehash_insert(self.nodes_ptr, id, <void*><size_t>new_node)
             return
 
 
         cdef USHORT level = self._random_level()
         new_node = create_node(id, level, vector)
-        prehash_insert(self.nodes_ptr, id, new_node)
+        prehash_insert(self.nodes_ptr, id, <void*><size_t>new_node)
 
         cdef DIST dist = hamming_dist(vector, self.entry_ptr.vector)
 
         cdef short l = self.max_level
 
         while l > level:
+            print('entry greedy at level: ' + str(l))
             entry_id, min_dist = self.greedy_closest_neighbor(vector, entry_ptr, min_dist, l)
+            print('greedy done!')
+            print()
             entry_ptr = self._get_node(entry_id)
             l -= 1
 
@@ -133,7 +138,10 @@ cdef class IndexHnsw:
         cdef UINT m_max
 
         while l >= 0:
+            print('select at level: ' + str(l))
             neighbors = self.search_level(vector, entry_ptr, self.config.ef_construction, l)
+            print('select done!')
+            print()
 
             neighbors = self._select_neighbors(vector, neighbors, self.config.m, l, True)
 
@@ -168,7 +176,7 @@ cdef class IndexHnsw:
 
         cdef cpp_set[UIDX] visited_nodes
 
-        cdef hnswNode *candidate
+        cdef hnswNode* candidate
         visited_nodes.insert(entry_ptr.id)
 
         cdef DIST lower_bound = dist
@@ -179,15 +187,25 @@ cdef class IndexHnsw:
         while not candidate_nodes.empty():
             priority, item = candidate_nodes.pop()
             candidate = self._get_node(item[0])
+            print('candidate raw id: ' + str(item[0]))
+            if candidate != NULL:
+                print('candidate is not NULL')
+                print('candiate: ' +  str(candidate.id))
+            else:
+                print('candidate null')
 
             if priority > lower_bound:
                 break
 
             edge_set = candidate.edges[level]
+            print('candidate id: ' + str(candidate.id))
+            print('get edge set ok!')
             next_edge = edge_set.head_ptr
+            print('# try to iter edges')
 
             while next_edge != NULL:
                 id = next_edge.node_id
+                print('next edge node: ' + str(id))
 
                 if visited_nodes.find(id) != visited_nodes.end():
                     next_edge = next_edge.next
@@ -316,10 +334,8 @@ cdef class IndexHnsw:
 
         return int(f)
 
-    cpdef query(self, BVECTOR query, USHORT k):
-        #cdef array.array final_result = array.array('L')
-        #cdef array.array final_idx = array.array('L')
-
+    cpdef query(self, BVECTOR query, USHORT top_k):
+        print('entry query')
         cdef hnswNode* entry_ptr = self.entry_ptr
         cdef DIST min_dist = hamming_dist(query, entry_ptr.vector)
         cdef USHORT l = self.max_level
@@ -329,19 +345,18 @@ cdef class IndexHnsw:
             entry_ptr = self._get_node(entry_id)
             l -= 1
 
-        cdef UINT ef = max(self.config.ef, k)
+        cdef UINT ef = max(self.config.ef, top_k)
         neighbors = self.search_level(query, entry_ptr, ef, 0)
 
-
-        #result_size = 0
-        result = []
+        cdef list result = []
         while not neighbors.empty():
             dist, item = neighbors.pop()
+            print('DIST: ' + str(dist))
             node = self._get_node(item[0])
             result.append({
                 'id': item[0],
                 'vector': node.vector,
-                'distance': dist
+                'distance': 1.0/dist-1
             })
 
         return result
@@ -354,6 +369,7 @@ cdef class IndexHnsw:
         for _0 in range(num_query):
             for _1 in range(self.bytes_per_vector):
                 q_key[_1] = query[_1]
+            print('query: #' + str(_0))
             q_result = self.query(q_key, k)
             result.append(q_result)
 
@@ -394,7 +410,7 @@ cdef class IndexHnsw:
             self.config.level_multiplier = 1.0 / log(self.config.m)
 
         if self.config.m_max == -1:
-            self.confix.m_max = self.config.m
+            self.config.m_max = self.config.m
 
         if self.config.m_max_0 == -1:
             self.config.m_max_0 = 2 * self.config.m

@@ -1,3 +1,4 @@
+from typing import List, Tuple
 import ctypes
 
 from hnsw_cpy.cython_hnsw.hnsw import IndexHnsw
@@ -15,23 +16,15 @@ class HnswIndex:
     HNSWs allow performing approximate nearest neighbor search with
     arbitrary data and non-metric dissimilarity functions.
     """
-    def __init__(self, bytes_per_vector, verbose=False):
+    def __init__(self, bytes_per_vector, verbose=False, **kwargs):
         """ A HNSW index object for storing and searching bytes vectors
 
         :type bytes_per_vector: int
-        :type verbose: bool
         :param bytes_per_vector: number of bytes per vector
-        :param verbose: enables extra logging
         """
         self.logger = set_logger('HnswIndex', verbose)
         self.bytes_per_vector = bytes_per_vector
         self.indexer = IndexHnsw(bytes_per_vector)
-        self._index_fn = self.indexer.index
-        self._find_fn_single = self.indexer.query
-        self._find_fn_batch = self.indexer.batch_query
-        self._save_model = self.indexer.save_model
-        self._load_model = self.indexer.load_model
-
 
 
     def _get_size(self, data):
@@ -56,42 +49,12 @@ class HnswIndex:
                 f'"data" contains {num_total} rows, larger than the upper bound {ctypes.c_uint(-1).value}!')
         return num_total
 
-    def add(self, data, num_rows=None):
-        """ Add data to the index
+    def bulk_index(self, vectors: List[bytes], doc_ids: List[int]):
+        if len(vectors) != len(doc_ids):
+            raise ValueError("the shape of vector list and doc list does not match")
+        for vector, doc_id in zip(vectors, doc_ids):
+            self.indexer.index(doc_id, vector)
 
-        Multiple `add()` behave like appending. For example:
-        .. highlight:: python
-        .. code-block:: python
-
-            hix = HnswIndex(4)
-            hix.add(bytes([1, 2, 3, 4,
-                          5, 6, 7, 8]))
-            hix.add(bytes([5, 6, 7, 8]))
-            print(hix.size)  # yields 3
-
-        :type data: bytes
-        :type num_rows: int
-        :param data: data to be indexed in bytes
-        :param num_rows: number of rows to index
-        :rtype: List[bool]
-        """
-        if not num_rows:
-            num_rows = self._get_size(data)
-        self._index_fn(data, num_rows)
-
-
-    def query(self, query, num_rows=None):
-        if not num_rows:
-            num_rows = self._get_size(query)
-
-        if num_rows == 1:
-            return self._find_fn_single(query).tolist()
-        else:
-            result = self._find_fn_batch(query, num_rows)
-            #result = [[] for _ in range(num_rows)]
-            #for (q, d) in zip(q_idx, d_idx):
-            #    result[q].append(d)
-            return result
 
     @property
     def size(self):
