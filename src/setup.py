@@ -17,7 +17,8 @@ setup(
         Extension(
             'hnsw_cpy.cython_hnsw.hnsw',
             ['hnsw_cpy/cython_hnsw/hnsw.pyx'],
-            extra_compile_args=['-O3'],
+            extra_compile_args=[
+                '-O3'],
             language="c++",
         ),
         Extension(

@@ -17,7 +17,16 @@ cdef struct hnsw_edge_set:
     UINT size
 
 cdef struct hnswNode:
-     UIDX id
-     BVECTOR vector
-     USHORT level
-     hnsw_edge_set** edges
+    UIDX id
+    BVECTOR vector
+    USHORT level
+    hnsw_edge_set** edges
+
+
+cdef struct hnswConfig:
+    float level_multiplier
+    int ef
+    int ef_construction
+    int m
+    int m_max
+    int m_max_0
