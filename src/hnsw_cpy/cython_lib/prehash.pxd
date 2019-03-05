@@ -1,9 +1,15 @@
 # cython: language_level=3
+from libc.stdint cimport uint64_t
 
-ctypedef void* _value
+ctypedef uint64_t key_t
+ctypedef void* value_t
+
+cdef struct _cell:
+    key_t key
+    value_t value
 
 cdef struct _bucket:
-    _value* data
+    _cell** cells
     unsigned int capacity
     unsigned int offset
     unsigned int size
@@ -16,23 +22,23 @@ cdef struct prehash_map:
 
 cdef _bucket* _new_bucket(unsigned int capacity, unsigned int offset)
 
-cdef void _bucket_insert(_bucket* bucket, unsigned int id, _value value)
+cdef void _bucket_insert(_bucket* bucket, key_t id, value_t value)
 
-cdef _value _bucket_get(_bucket* bucket, unsigned int id)
+cdef value_t _bucket_get(_bucket* bucket, key_t id)
 
-cdef void _bucket_delete(_bucket* bucket, unsigned int id)
+cdef void _bucket_delete(_bucket* bucket, key_t id)
 
 cdef void _bucket_free(_bucket* bucket)
 
 cdef prehash_map* new_prehash_map()
 
-cdef void prehash_insert(prehash_map* map, unsigned int id, _value value)
+cdef void prehash_insert(prehash_map* map, key_t id, value_t value)
 
-cdef _value prehash_get(prehash_map* map, unsigned int id)
+cdef value_t prehash_get(prehash_map* map, key_t id)
 
-cdef void prehash_delete(prehash_map* map, unsigned int id)
+cdef void prehash_delete(prehash_map* map, key_t id)
 
-cdef bint prehash_exist(prehash_map* map, unsigned int id)
+cdef bint prehash_exist(prehash_map* map, key_t id)
 
 cdef bint prehash_is_empty(prehash_map* map)
 

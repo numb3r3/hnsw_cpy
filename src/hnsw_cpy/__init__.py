@@ -55,6 +55,9 @@ class HnswIndex:
         for vector, doc_id in zip(vectors, doc_ids):
             self.indexer.index(doc_id, vector)
 
+    def query(self, query: bytes, top_k: int):
+        return self.indexer.query(query, top_k)
+
 
     @property
     def size(self):

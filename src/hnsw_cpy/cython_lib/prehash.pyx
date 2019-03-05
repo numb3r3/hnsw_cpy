@@ -8,24 +8,33 @@ cdef unsigned int BUCKET_CAPACITY = 10000
 cdef _bucket* _new_bucket(unsigned int capacity, unsigned int offset):
     cdef _bucket* bucket = <_bucket*> PyMem_Malloc(sizeof(_bucket))
     cdef unsigned int _0
-    bucket.data = <_value*> PyMem_Malloc(sizeof(_value)*capacity)
+    bucket.cells = <_cell**> PyMem_Malloc(sizeof(_cell*)*capacity)
     for _0 in range(capacity):
-        bucket.data[_0] = NULL
+        bucket.cells[_0] = NULL
     bucket.capacity = capacity
     bucket.offset = offset
-    bucket.size += 1
+    bucket.size = 0
 
     return bucket
 
-cdef void _bucket_insert(_bucket* bucket, unsigned int id, _value value):
-    bucket.data[id] = value
+cdef void _bucket_insert(_bucket* bucket, key_t id, value_t value):
+    cdef _cell* cell = <_cell*> PyMem_Malloc(sizeof(_cell))
+    cell.key = id
+    cell.value = value
+    bucket.cells[id] = cell
     bucket.size += 1
 
-cdef _value _bucket_get(_bucket* bucket, unsigned int id):
-    return bucket.data[id]
+cdef value_t _bucket_get(_bucket* bucket, key_t id):
+    cdef _cell* cell = bucket.cells[id]
+    return cell.value if cell != NULL else NULL
 
-cdef void _bucket_delete(_bucket* bucket, unsigned int id):
-    bucket.data[id] = NULL
+cdef void _bucket_delete(_bucket* bucket, key_t id):
+    cdef _cell* cell = bucket.cells[id]
+    if cell.value != NULL:
+        PyMem_Free(cell.value)
+    PyMem_Free(cell)
+
+    bucket.cells[id] = NULL
     # WIP: bucket.size is an unsigned integer
     if bucket.size > 0:
         bucket.size -= 1
@@ -34,7 +43,11 @@ cdef void _bucket_free(_bucket* bucket):
     if bucket == NULL:
         return
 
-    PyMem_Free(bucket.data)
+    cdef key_t _0
+    for _0 in range(bucket.size):
+        _bucket_delete(bucket, _0)
+
+    PyMem_Free(bucket.cells)
     PyMem_Free(bucket)
 
 cdef prehash_map* new_prehash_map():
@@ -48,7 +61,7 @@ cdef prehash_map* new_prehash_map():
     return map
 
 
-cdef void prehash_insert(prehash_map* map, unsigned int id, _value value):
+cdef void prehash_insert(prehash_map* map, key_t id, value_t value):
      cdef unsigned int bucket_id = _get_bucket_id(id, BUCKET_CAPACITY)
 
      cdef unsigned int _0 = map.bucket_count
@@ -67,7 +80,7 @@ cdef void prehash_insert(prehash_map* map, unsigned int id, _value value):
      _bucket_insert(bucket, id, value)
      map.total_size += 1
 
-cdef _value prehash_get(prehash_map* map, unsigned int id):
+cdef value_t prehash_get(prehash_map* map, key_t id):
     cdef unsigned int bucket_id = _get_bucket_id(id, BUCKET_CAPACITY)
     if bucket_id >= map.bucket_count:
         return NULL
@@ -77,7 +90,7 @@ cdef _value prehash_get(prehash_map* map, unsigned int id):
     id = id - BUCKET_CAPACITY*bucket_id
     return _bucket_get(bucket, id)
 
-cdef void prehash_delete(prehash_map* map, unsigned int id):
+cdef void prehash_delete(prehash_map* map, key_t id):
     cdef unsigned int bucket_id = _get_bucket_id(id, BUCKET_CAPACITY)
     if bucket_id >= map.bucket_count:
         return
@@ -89,7 +102,7 @@ cdef void prehash_delete(prehash_map* map, unsigned int id):
     _bucket_delete(bucket, id)
     map.total_size -= 1
 
-cdef bint prehash_exist(prehash_map* map, unsigned int id):
+cdef bint prehash_exist(prehash_map* map, key_t id):
     return prehash_get(map, id) != NULL
 
 
@@ -128,7 +141,7 @@ cdef class PrehashMap(object):
 
     def get(self, id):
         # return fromvoidptr(prehash_get(self._map_ptr, id))
-        cdef _value value = prehash_get(self._map_ptr, id)
+        cdef value_t value = prehash_get(self._map_ptr, id)
         if value == NULL:
             return None
         return <object> <void*> value
