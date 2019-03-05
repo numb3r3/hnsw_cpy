@@ -49,7 +49,10 @@ class HnswIndex:
                 f'"data" contains {num_total} rows, larger than the upper bound {ctypes.c_uint(-1).value}!')
         return num_total
 
-    def bulk_index(self, vectors: List[bytes], doc_ids: List[int]):
+    def index(self, doc_id: int, vector: bytes):
+        self.indexer.index(doc_id, vector)
+
+    def bulk_index(self, doc_ids: List[int], vectors: List[bytes]):
         if len(vectors) != len(doc_ids):
             raise ValueError("the shape of vector list and doc list does not match")
         for vector, doc_id in zip(vectors, doc_ids):
@@ -57,6 +60,7 @@ class HnswIndex:
 
     def query(self, query: bytes, top_k: int):
         return self.indexer.query(query, top_k)
+
 
 
     @property

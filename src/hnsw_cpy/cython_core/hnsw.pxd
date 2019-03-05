@@ -6,7 +6,8 @@ from libcpp.utility cimport pair as cpp_pair
 ctypedef float DIST
 ctypedef unsigned int UINT
 ctypedef unsigned short USHORT
-ctypedef unsigned char* BVECTOR
+ctypedef unsigned char UCHAR
+ctypedef UCHAR* BVECTOR
 ctypedef unsigned int UIDX
 
 cdef struct hnsw_edge:
