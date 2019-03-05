@@ -221,9 +221,14 @@ cdef class IndexHnsw:
             while next_edge != NULL:
                 id = next_edge.node_id
 
-                if visited_nodes.find(id) != visited_nodes.end():
+                lb = visited_nodes.lower_bound(id)
+                if lb != visited_nodes.end() and id == deref(lb):
                     next_edge = next_edge.next
                     continue
+
+                #if visited_nodes.find(id) != visited_nodes.end():
+                #    next_edge = next_edge.next
+                #    continue
 
                 visited_nodes.insert(id)
                 neighbor = self._get_node(id)
@@ -308,9 +313,13 @@ cdef class IndexHnsw:
                 next_edge = edge_set.head_ptr
                 while next_edge != NULL:
                     id = next_edge.node_id
-                    if existing_candidates.find(id) != existing_candidates.end():
+                    lb = existing_candidates.lower_bound(id)
+                    if lb != existing_candidates.end() and id == deref(lb):
                         next_edge = next_edge.next
                         continue
+                    #if existing_candidates.find(id) != existing_candidates.end():
+                    #    next_edge = next_edge.next
+                    #    continue
                     existing_candidates.insert(id)
                     candidate = self._get_node(id)
 
