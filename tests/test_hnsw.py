@@ -37,9 +37,12 @@ class TestHnswIndex(unittest.TestCase):
         dist0 = hamming_dist(x, x, 4)
         dist1 = hamming_dist(x, y, 4)
         dist2 = hamming_dist(x, z, 4)
+
         self.assertEqual(dist0, 0)
         self.assertEqual(dist1, 1)
         self.assertEqual(dist2, 7)
+
+
 
 
     def test_add_data(self):

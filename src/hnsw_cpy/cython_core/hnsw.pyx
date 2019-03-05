@@ -83,18 +83,19 @@ cdef bytes _c2bytes(BVECTOR data, USHORT datalen):
              resbuf[8*i + (7-pos)] = s01[(byte >> pos) & 1]
      return retval
 
+cpdef USHORT hamming_dist(BVECTOR x, BVECTOR y, USHORT datalen):
+    cdef USHORT i, dist
+    cdef UCHAR byte_x, byte_y, byte_z
 
-cpdef USHORT hamming_dist(BVECTOR x, BVECTOR y, USHORT bytes_per_vector):
-     cdef bytes x_bytes = _c2bytes(x, bytes_per_vector)
-     cdef bytes y_bytes = _c2bytes(y, bytes_per_vector)
+    for i in range(datalen):
+        byte_x = x[i]
+        byte_y = y[i]
+        byte_z = byte_x ^ byte_y
+        while byte_z > 0:
+            dist += 1
+            byte_z &= byte_z - 1
+    return dist
 
-     cdef USHORT N = bytes_per_vector * 8
-     cdef USHORT i = 0
-     cdef USHORT count = 0
-
-     for i in range(N):
-         count += (x_bytes[i] != y_bytes[i])
-     return count
 
 cdef void _free_node(hnswNode* node):
     cdef USHORT level = node.level
