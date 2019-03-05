@@ -55,7 +55,7 @@ class TestHnswIndex(unittest.TestCase):
             query_t_avg = np.mean(query_time_cost)
             build_qps = data_size / build_t_avg
             query_qps = query_size / query_t_avg
-            print(f'{data_size}\t|\t{build_qps}\t|\t{buid_t_avg}\t|\t{query_qps}\t|\t{query_t_avg}')
+            print(f'{data_size}\t|\t{build_qps}\t|\t{build_t_avg}\t|\t{query_qps}\t|\t{query_t_avg}')
             data_size *= 2
 
 
