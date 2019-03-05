@@ -4,7 +4,7 @@ import unittest
 
 import numpy as np
 from hnsw_cpy import HnswIndex
-from hnsw_cpy.cython_hnsw.hnsw import hamming_dist
+from hnsw_cpy.cython_core.hnsw import hamming_dist
 
 
 class TestHnswIndex(unittest.TestCase):

@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import ctypes
 
-from hnsw_cpy.cython_hnsw.hnsw import IndexHnsw
+from hnsw_cpy.cython_core.hnsw import IndexHnsw
 from hnsw_cpy.helper import set_logger
 
 __version__ = '0.0.1'

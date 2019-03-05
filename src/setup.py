@@ -15,26 +15,20 @@ setup(
     ],
     ext_modules=[
         Extension(
-            'hnsw_cpy.cython_hnsw.hnsw',
-            ['hnsw_cpy/cython_hnsw/hnsw.pyx'],
+            'hnsw_cpy.cython_core.hnsw',
+            ['hnsw_cpy/cython_core/hnsw.pyx'],
             extra_compile_args=[
                 '-O3'],
             language="c++",
         ),
         Extension(
-            'hnsw_cpy.cython_hnsw.utils',
-            ['hnsw_cpy/cython_hnsw/utils.pyx'],
-            extra_compile_args=['-O3'],
-        ),
-        Extension(
-            'hnsw_cpy.cython_lib.prehash',
-            ['hnsw_cpy/cython_lib/prehash.pyx'],
+            'hnsw_cpy.cython_core.utils',
+            ['hnsw_cpy/cython_core/utils.pyx'],
             extra_compile_args=['-O3'],
         ),
     ],
     install_requires=[
         'termcolor>=1.1',
-        'cymem>=2.0.0'
     ],
     extras_require={
         'test': ['numpy'],
