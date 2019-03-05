@@ -14,15 +14,10 @@ class TestHnswIndex(unittest.TestCase):
             index += 1
             yield (index, tmp.tobytes())
 
-    def test_index_hnsw(self):
-        self._benchmark('index', self.toy_data_generator)
+    def test_bench_hnsw(self):
+        self._benchmark(self.toy_data_generator)
 
-    def test_query_hnsw(self):
-        self._benchmark('query', self.toy_data_generator)
-
-
-    def _benchmark(self, benchmark_fn, data_gen_fn,
-                   num_repeat=3, data_size=10000, data_dim=8, max_iter=5):
+    def _benchmark(self, data_gen_fn, num_repeat=3, data_size=10000, data_dim=8, max_iter=5):
         print(f'\nbenchmarking {benchmark_fn} for HNSW index (avg. over {num_repeat})')
         print('data size\t|\tIndex QPS\t|\t Index time(s)\t|\tQuery QPS\t|\tQuery times(s)')
 
