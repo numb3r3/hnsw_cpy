@@ -1,6 +1,6 @@
 import unittest
 
-from bindex.cython_hnsw.utils import PriorityQueue
+from hnsw_cpy.cython_core.utils import PriorityQueue
 
 
 class TestPriorityQueue(unittest.TestCase):
