@@ -30,16 +30,22 @@ Three core functions: `add()`, `query()`.
 
 ```python
 from hnsw_cpy import HnswIndex
+import numpy as np
 
-# read from file and build index
-fp = open('data.bin', 'rb')
 
-index = HnswIndex(bytes_per_vector=4)
-index.add(fp.read())
+bytes_per_vector = 8
 
-# build a query of 4 bytes
-query = bytes([255, 123, 23, 56])
+index = HnswIndex(bytes_per_vector=bytes_per_vector)
 
-# find and return matched indices
-result = index.query(query)  # List[int]
+# random generate 10000 vectors
+data_size = 10000
+for i in range(data_size):
+    data = np.random.randint(1, 255, data_dim, dtype=np.uint8).tobytes()
+    index.index(i, data)
+
+# build a random query
+query = np.random.randint(1, 255, data_dim, dtype=np.uint8).tobytes()
+
+# find the top 10 result
+result = index.query(query, 10)
 ```
