@@ -21,6 +21,9 @@ cdef class PriorityQueue(object):
     def get(self, variables):
         return self.entries.get(variables, None)
 
+    def peak(self):
+        return self.pq[0]
+
 
     def delete(self, variables):
         entry = self.entries.pop(variables)

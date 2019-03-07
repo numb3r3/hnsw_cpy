@@ -65,6 +65,7 @@ cdef void _empty_edge_set(hnswNode* node, USHORT level):
         edge_set.head_ptr = head_edge.next
         PyMem_Free(head_edge)
         head_edge = edge_set.head_ptr
+    edge_set.size = 0
     edge_set.head_ptr = NULL
     edge_set.last_ptr = NULL
 
@@ -171,10 +172,14 @@ cdef class IndexHnsw:
 
             neighbors = self._select_neighbors(vector, neighbors, self.config.m, l, True)
 
+            neighbor = NULL
             while neighbors.size > 0:
                 dist, item = neighbors.pop()
                 neighbor = self._get_node(item[0])
-                entry_ptr = neighbor
+
+                # the first pop is nearest neighbor
+                if neighbor == NULL:
+                    entry_ptr = neighbor
 
                 _add_edge(new_node, neighbor, dist, l)
                 _add_edge(neighbor, new_node, dist, l)
@@ -206,7 +211,7 @@ cdef class IndexHnsw:
         cdef hnswNode* candidate
         visited_nodes.insert(entry_ptr.id)
 
-        cdef DIST lower_bound = dist
+        cdef DIST lower_bound
 
         cdef hnsw_edge* next_edge
         cdef hnsw_edge_set* edge_set
@@ -215,6 +220,7 @@ cdef class IndexHnsw:
         while not candidate_nodes.empty():
             priority, item = candidate_nodes.pop()
             candidate = self._get_node(item[0])
+            lower_bound = 1.0 / result_nodes.peak()[0] - 1
 
             if priority > lower_bound:
                 break
@@ -239,11 +245,12 @@ cdef class IndexHnsw:
                     candidate_nodes.push((id,), dist)
                     result_nodes.push((id,), 1/(dist+1.0))
 
-                    if dist < lower_bound:
-                        lower_bound = dist
-
                     if result_nodes.size > ef:
                        result_nodes.pop()
+
+                    #if dist > lower_bound:
+                    #    lower_bound = dist
+
 
                 next_edge = next_edge.next
 

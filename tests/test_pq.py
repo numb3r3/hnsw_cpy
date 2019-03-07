@@ -37,6 +37,18 @@ class TestPriorityQueue(unittest.TestCase):
         self.assertEqual(item[0], "b")
         self.assertEqual(item[1], [1, 2, 3])
 
+    def test_peak(self):
+        weight_1, item_1 = self.pq.peak()
+        weight_1, item_2 = self.pq.pop()
+        self.assertEqual(weight_1, weight_1)
+        self.assertEqual(item_1[0], item_2[0])
+
+        weight_1, item_1 = self.pq.peak()
+        weight_1, item_2 = self.pq.pop()
+        self.assertEqual(weight_1, weight_1)
+        self.assertEqual(item_1[0], item_2[0])
+
+
     def test_delete(self):
         self.pq.delete("d")
         self.assertEqual(self.pq.size, 3)
