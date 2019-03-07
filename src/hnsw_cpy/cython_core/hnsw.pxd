@@ -11,7 +11,7 @@ ctypedef UCHAR* BVECTOR
 ctypedef unsigned int UIDX
 
 cdef struct hnsw_edge:
-    UIDX node_id
+    hnswNode* node
     DIST dist
     hnsw_edge* next
 

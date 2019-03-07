@@ -45,7 +45,7 @@ cdef hnswNode* create_node(UIDX id, USHORT level, BVECTOR vector, USHORT bytes_n
 
 cdef void _add_edge(hnswNode* f, hnswNode* t, DIST dist, UINT level):
     cdef hnsw_edge* edge = <hnsw_edge*> PyMem_Malloc(sizeof(hnsw_edge))
-    edge.node_id = t.id
+    edge.node = t
     edge.dist = dist
     edge.next = NULL
 
@@ -64,6 +64,7 @@ cdef void _empty_edge_set(hnswNode* node, USHORT level):
     cdef hnsw_edge_set* edge_set = node.edges[level]
     cdef hnsw_edge* head_edge = edge_set.head_ptr
     while head_edge != NULL:
+        head_edge.node = NULL
         edge_set.head_ptr = head_edge.next
         PyMem_Free(head_edge)
         head_edge = edge_set.head_ptr
@@ -120,18 +121,6 @@ cdef class IndexHnsw:
     cdef nodes_map nodes
     cdef hnswNode* entry_ptr
 
-    cdef hnswNode* _get_node(self, UIDX id):
-        lb = self.nodes.lower_bound(id)
-        # Check if the key already exists
-        if lb != self.nodes.end() and id == deref(lb).first:
-            return deref(lb).second
-
-    cdef void _insert_node(self, hnswNode* node):
-        cdef UIDX key = node.id
-        lb = self.nodes.lower_bound(key)
-        cdef node_item item = node_item(key, node)
-        self.nodes.insert(lb, item)
-
 
     cpdef void index(self, UIDX id, BVECTOR vector):
         self._add_node(id, vector)
@@ -145,13 +134,11 @@ cdef class IndexHnsw:
             # create the root node at level 0
             new_node = create_node(id, 0, vector, self.bytes_num)
             self.entry_ptr = new_node
-            self._insert_node(new_node)
 
             return
 
         cdef USHORT level = self._random_level()
         new_node = create_node(id, level, vector, self.bytes_num)
-        self._insert_node(new_node)
 
         cdef DIST min_dist = hamming_dist(vector, self.entry_ptr.vector, self.bytes_num)
 
@@ -159,8 +146,8 @@ cdef class IndexHnsw:
 
         cdef UIDX entry_id
         while l > level:
-            entry_id, min_dist = self.greedy_closest_neighbor(vector, entry_ptr, min_dist, l)
-            entry_ptr = self._get_node(entry_id)
+            entry_ptr, min_dist = self.greedy_closest_neighbor(vector, entry_ptr, min_dist, l)
+
             l -= 1
 
         l = min(self.max_level, level)
