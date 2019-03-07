@@ -22,6 +22,13 @@ setup(
             language="c++",
         ),
         Extension(
+            'hnsw_cpy.cython_core.heappq',
+            ['hnsw_cpy/cython_core/heappq.pyx'],
+            extra_compile_args=[
+                '-O3'],
+        ),
+
+        Extension(
             'hnsw_cpy.cython_core.utils',
             ['hnsw_cpy/cython_core/utils.pyx'],
             extra_compile_args=['-O3'],
