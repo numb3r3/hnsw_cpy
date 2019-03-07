@@ -46,7 +46,7 @@ class TestHnswIndex(unittest.TestCase):
 
 
     def test_add_data(self):
-        self.assertEqual(self.hnsw_toy.bytes_per_vector, self.toy_data['bytes'])
+        self.assertEqual(self.hnsw_toy.bytes_num, self.toy_data['bytes'])
         self.assertEqual(self.hnsw_toy.size, 8)
 
     def test_query(self):

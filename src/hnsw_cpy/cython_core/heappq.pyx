@@ -50,7 +50,6 @@ cdef void heappq_push(heappq* pq, float priority, value_t value):
             else:
                 new_node.parent = start_node
                 start_node.right = new_node
-                # pq.max_node = new_node
                 break
         elif start_node.left != NULL:
             new_max_node = 0
@@ -59,7 +58,6 @@ cdef void heappq_push(heappq* pq, float priority, value_t value):
             new_max_node = 0
             new_node.parent = start_node
             start_node.left = new_node
-            #pq.min_node = new_node
             break
     if new_min_node:
         pq.min_node = new_node
@@ -80,14 +78,17 @@ cdef pq_entity* heappq_pop_min(heappq* pq):
     if right_node == NULL:
         if parent_node != NULL:
            parent_node.left = NULL
-        pq.min_node = parent_node
+           pq.min_node = parent_node
+        else:
+           pq.root = NULL
+        # pq.min_node = parent_node
     else:
         if parent_node == NULL:
+            right_node.parent = NULL
             pq.root = right_node
-
-        result_node.right = NULL
-        right_node.parent = parent_node
-        if parent_node != NULL:
+        else:
+            result_node.right = NULL
+            right_node.parent = parent_node
             parent_node.left = right_node
 
         pq.min_node = right_node
@@ -96,8 +97,11 @@ cdef pq_entity* heappq_pop_min(heappq* pq):
 
     cdef pq_entity* result = result_node.entity
     result_node.entity = NULL
+    result_node.left = NULL
+    result_node.right = NULL
+    result_node.parent = NULL
     PyMem_Free(result_node)
-
+    result_node = NULL
 
     return result
 
@@ -115,23 +119,29 @@ cdef pq_entity* heappq_pop_max(heappq* pq):
     if left_node == NULL:
         if parent_node != NULL:
             parent_node.right = NULL
-        pq.max_node = parent_node
+            pq.max_node = parent_node
+        else:
+            pq.root = NULL
+        # pq.max_node = parent_node
     else:
         if parent_node == NULL:
+            left_node.parent = NULL
             pq.root = left_node
-
-        result_node.left = NULL
-        left_node.parent = parent_node
-        if parent_node != NULL:
+        else:
+            result_node.left = NULL
+            left_node.parent = parent_node
             parent_node.right = left_node
+
 
         pq.max_node = left_node
         while pq.max_node.right != NULL:
             pq.max_node = pq.max_node.right
 
     cdef pq_entity* result = result_node.entity
-
     result_node.entity = NULL
+    result_node.left = NULL
+    result_node.right = NULL
+    result_node.parent = NULL
     PyMem_Free(result_node)
 
     return result

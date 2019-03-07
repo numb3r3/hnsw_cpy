@@ -16,7 +16,9 @@ from cython.operator cimport preincrement as preinc
 from cython.operator cimport postincrement
 
 
-from hnsw_cpy.cython_core.utils import PriorityQueue
+# from hnsw_cpy.cython_core.utils import PriorityQueue
+from hnsw_cpy.cython_core.heappq cimport heappq, pq_entity, init_heappq, free_heappq, heappq_push, heappq_pop_min, heappq_peak_min, heappq_pop_max, heappq_peak_max
+
 
 cdef hnswNode* create_node(UIDX id, USHORT level, BVECTOR vector, USHORT bytes_num):
      cdef hnswNode *node = <hnswNode*> PyMem_Malloc(sizeof(hnswNode))
@@ -161,21 +163,26 @@ cdef class IndexHnsw:
             entry_ptr = self._get_node(entry_id)
             l -= 1
 
-
         l = min(self.max_level, level)
         cdef hnswNode* neighbor
         cdef UINT m_max
         cdef DIST dist
+        cdef heappq* neighbors_pq
+        cdef pq_entity* pq_e
 
         while l >= 0:
-            neighbors = self.search_level(vector, entry_ptr, self.config.ef_construction, l)
+            neighbors_pq = self.search_level(vector, entry_ptr, self.config.ef_construction, l)
 
-            neighbors = self._select_neighbors(vector, neighbors, self.config.m, l, True)
+            neighbors_pq = self._select_neighbors(vector, neighbors_pq, self.config.m, l, True)
 
             neighbor = NULL
-            while neighbors.size > 0:
-                dist, item = neighbors.pop()
-                neighbor = self._get_node(item[0])
+            while neighbors_pq.size > 0:
+                # dist, item = neighbors.pop()
+                pq_e = heappq_pop_min(neighbors_pq)
+                dist = pq_e.priority
+                neighbor = <hnswNode*> pq_e.value
+
+                # neighbor = self._get_node(item[0])
 
                 # the first pop is nearest neighbor
                 if neighbor == NULL:
@@ -197,14 +204,13 @@ cdef class IndexHnsw:
             self.entry_ptr = new_node
 
 
-    cdef search_level(self, BVECTOR query, hnswNode *entry_ptr, UINT ef, USHORT level):
-
+    cdef heappq* search_level(self, BVECTOR query, hnswNode *entry_ptr, UINT ef, USHORT level):
         cdef DIST dist = hamming_dist(query, entry_ptr.vector, self.bytes_num)
 
-        candidate_nodes = PriorityQueue()
-        result_nodes = PriorityQueue()
-        candidate_nodes.push((entry_ptr.id,), dist) # min priority queue
-        result_nodes.push((entry_ptr.id,), 1/(dist+1.0)) # max priority queue
+        cdef heappq* candidates_pq = init_heappq()
+        cdef heappq* result_pq = init_heappq()
+        heappq_push(candidates_pq, dist, entry_ptr)
+        heappq_push(result_pq, dist, entry_ptr)
 
         cdef cpp_set[UIDX] visited_nodes
 
@@ -217,10 +223,14 @@ cdef class IndexHnsw:
         cdef hnsw_edge_set* edge_set
         cdef UIDX id
 
-        while not candidate_nodes.empty():
-            priority, item = candidate_nodes.pop()
-            candidate = self._get_node(item[0])
-            lower_bound = 1.0 / result_nodes.peak()[0] - 1
+        cdef pq_entity* pq_e
+        cdef DIST d
+        while candidates_pq.size > 0:
+            pq_e = heappq_pop_min(candidates_pq)
+            priority = pq_e.priority
+            candidate = <hnswNode*> pq_e.value
+
+            lower_bound = heappq_peak_max(result_pq).priority
 
             if priority > lower_bound:
                 break
@@ -230,6 +240,7 @@ cdef class IndexHnsw:
 
             while next_edge != NULL:
                 id = next_edge.node_id
+                neighbor = self._get_node(id)
 
                 lb = visited_nodes.lower_bound(id)
                 if lb != visited_nodes.end() and id == deref(lb):
@@ -237,25 +248,24 @@ cdef class IndexHnsw:
                     continue
 
                 visited_nodes.insert(id)
-                neighbor = self._get_node(id)
 
                 dist = hamming_dist(query, neighbor.vector, self.bytes_num)
 
-                if dist < lower_bound or result_nodes.size < ef:
-                    candidate_nodes.push((id,), dist)
-                    result_nodes.push((id,), 1/(dist+1.0))
+                if dist < lower_bound or result_pq.size < ef:
+                    heappq_push(candidates_pq, dist, neighbor)
+                    heappq_push(result_pq, dist, neighbor)
 
-                    if result_nodes.size > ef:
-                       result_nodes.pop()
-
-                    #if dist > lower_bound:
-                    #    lower_bound = dist
-
+                    if result_pq.size > ef:
+                        heappq_pop_max(result_pq)
 
                 next_edge = next_edge.next
 
         visited_nodes.clear()
-        return result_nodes
+
+        free_heappq(candidates_pq)
+        candidates_pq = NULL
+
+        return result_pq
 
     cdef tuple greedy_closest_neighbor(self, BVECTOR query, hnswNode *entry_ptr, DIST min_dist, USHORT level):
         cdef DIST _min_dist = min_dist
@@ -292,28 +302,24 @@ cdef class IndexHnsw:
         return (entry_ptr.id, _min_dist)
 
 
-    cdef _select_neighbors(self, BVECTOR query, neighbors, USHORT ensure_k, USHORT level, bint extend_candidates):
-        # reverse neighors
-        candidates = PriorityQueue()
-        neighbors_clone = PriorityQueue()
-
+    cdef heappq* _select_neighbors(self, BVECTOR query, heappq* neighbors_pq, USHORT ensure_k, USHORT level, bint extend_candidates):
+        cdef heappq* candidates_pq = init_heappq()
         cdef cpp_set[UIDX] existing_candidates
-        while not neighbors.empty():
-            priority, item = neighbors.pop()
-            candidates.push((item[0],), 1 / priority - 1)
-            neighbors_clone.push((item[0],), priority)
-            existing_candidates.insert(item[0])
 
-        cdef USHORT candidates_size = neighbors.size
+        # cdef USHORT candidates_size = neighbors.size
 
         cdef hnsw_edge* next_edeg
         cdef hnsw_edge_set* edge_set
         cdef DIST dist
+        cdef pq_entity* pq_e
 
         if extend_candidates:
-            while not neighbors_clone.empty():
-                priority, item = neighbors_clone.pop()
-                candidate = self._get_node(item[0])
+            while neighbors_pq.size > 0:
+                pq_e = heappq_pop_min(neighbors_pq)
+                priority = pq_e.priority
+                candidate = <hnswNode*> pq_e.value
+                heappq_push(candidates_pq, priority, candidate)
+                existing_candidates.insert(candidate.id)
 
                 edge_set = candidate.edges[level]
                 next_edge = edge_set.head_ptr
@@ -328,19 +334,24 @@ cdef class IndexHnsw:
                     candidate = self._get_node(id)
 
                     dist = hamming_dist(query, candidate.vector, self.bytes_num)
-                    candidates.push((id,), dist)
+                    heappq_push(candidates_pq, dist, candidate)
+        else:
+            candidates_pq = neighbors_pq
 
-        result = PriorityQueue()
-        while (not candidates.empty()) and result.size < ensure_k:
-            p, t = candidates.pop()
-            result.push((t[0],), p)
+
+        cdef heappq* result_pq = init_heappq()
+        while candidates_pq.size > 0 and result_pq.size < ensure_k:
+            pq_e = heappq_pop_min(candidates_pq)
+            heappq_push(result_pq, pq_e.priority, pq_e.value)
+
 
         existing_candidates.clear()
+        free_heappq(candidates_pq)
 
-        return result
+        return result_pq
 
     cdef void _prune_neighbors(self, hnswNode* node, UINT k, USHORT level):
-        neighbors = PriorityQueue()
+        cdef heappq* neighbors_pq = init_heappq()
 
         cdef hnsw_edge_set* edge_set = node.edges[level]
         cdef hnsw_edge* next_edge = edge_set.head_ptr
@@ -350,17 +361,23 @@ cdef class IndexHnsw:
         while next_edge != NULL:
             node_id = next_edge.node_id
             dist = next_edge.dist
+            neighbor = self._get_node(node_id)
 
-            neighbors.push((node_id,), 1 / (dist+1.0))
+            heappq_push(neighbors_pq, dist, neighbor)
+
             next_edge = next_edge.next
 
-        neighbors = self._select_neighbors(node.vector, neighbors, self.config.m, level, True)
+        neighbors_pq = self._select_neighbors(node.vector, neighbors_pq, self.config.m, level, True)
 
         _empty_edge_set(node, level)
-        while not neighbors.empty():
-            dist, item = neighbors.pop()
-            neighbor = self._get_node(item[0])
+        cdef pq_entity* pq_e
+        while neighbors_pq.size > 0:
+            pq_e = heappq_pop_min(neighbors_pq)
+            dist = pq_e.priority
+            neighbor = <hnswNode*> pq_e.value
             _add_edge(node, neighbor, dist, level)
+
+        free_heappq(neighbors_pq)
 
     cdef USHORT _random_level(self):
         cdef double r = rand() / RAND_MAX
@@ -380,26 +397,27 @@ cdef class IndexHnsw:
             l -= 1
 
         cdef UINT ef = max(self.config.ef, top_k)
-        neighbors = self.search_level(query, entry_ptr, ef, 0)
-
-        cdef UINT cutoff = 0
-        if neighbors.size > top_k:
-            cutoff = neighbors.size - top_k
+        cdef heappq* neighbors_pq = self.search_level(query, entry_ptr, ef, 0)
+        cdef USHORT count = 0
 
         cdef list result = []
-        while not neighbors.empty():
-            dist, item = neighbors.pop()
-            if cutoff > 0:
-                cutoff -= 1
-                continue
-            node = self._get_node(item[0])
-            result.append({
-                'id': item[0],
-                # 'vector': <bytes> node.vector,
-                'distance': 1.0/dist-1
-            })
 
-        return result[::-1]
+        cdef pq_entity* pq_e
+        cdef hnswNode* node
+        cdef DIST dist
+        while neighbors_pq.size > 0:
+            pq_e = heappq_pop_min(neighbors_pq)
+            dist = pq_e.priority
+            node = <hnswNode*> pq_e.value
+            result.append({
+                'id': node.id,
+                'distance': dist
+            })
+            count += 1
+            if count >= top_k:
+                break
+
+        return result
 
     cpdef batch_query(self, BVECTOR query, const USHORT num_query, const USHORT k):
         cdef UIDX _0

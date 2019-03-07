@@ -16,29 +16,29 @@ class HnswIndex:
     HNSWs allow performing approximate nearest neighbor search with
     arbitrary data and non-metric dissimilarity functions.
     """
-    def __init__(self, bytes_per_vector, verbose=False, **kwargs):
+    def __init__(self, bytes_num, verbose=False, **kwargs):
         """ A HNSW index object for storing and searching bytes vectors
 
         :type bytes_per_vector: int
         :param bytes_per_vector: number of bytes per vector
         """
         self.logger = set_logger('HnswIndex', verbose)
-        self.bytes_per_vector = bytes_per_vector
-        self.indexer = IndexHnsw(bytes_per_vector)
+        self.bytes_num = bytes_num
+        self.indexer = IndexHnsw(bytes_num)
 
 
     def _get_size(self, data):
         if not isinstance(data, bytes):
             raise TypeError(f'"data" must be "bytes", received {type(data)}')
         len_data = len(data)
-        if len_data < self.bytes_per_vector:
+        if len_data < self.bytes_num:
             raise IndexError(
                 f'"data" is {len_data} bytes, shorter than predefined "bytes_per_vector={self.bytes_per_vector}"')
-        if len_data % self.bytes_per_vector != 0:
+        if len_data % self.bytes_num != 0:
             raise ValueError(
                 f'"data" is {len_data} bytes,'
                 f'can not be divided by predefined "bytes_per_vector={self.bytes_per_vector}"')
-        num_total = int(len(data) / self.bytes_per_vector)
+        num_total = int(len(data) / self.bytes_num)
         self.logger.debug(f'input size: {len(data)} bytes; '
                           f'bytes/vector: {self.bytes_per_vector}; '
                           f'num vectors: {num_total}'
