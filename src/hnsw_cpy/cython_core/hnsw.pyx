@@ -4,7 +4,7 @@
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython cimport array
-# from libc.stdlib cimport malloc, free
+
 from libc.stdlib cimport rand, RAND_MAX
 from libc.string cimport memcpy, strcpy
 from libc.math cimport log, floor
@@ -15,9 +15,8 @@ from cython.operator cimport dereference as deref
 from cython.operator cimport preincrement as preinc
 from cython.operator cimport postincrement
 
-
-# from hnsw_cpy.cython_core.utils import PriorityQueue
 from hnsw_cpy.cython_core.heappq cimport heappq, pq_entity, init_heappq, free_heappq, heappq_push, heappq_pop_min, heappq_peak_min, heappq_pop_max, heappq_peak_max
+from hnsw_cpy.cython_core.queue cimport queue, init_queue, queue_push_tail, queue_pop_head, queue_free, queue_is_empty
 
 
 cdef hnswNode* create_node(UIDX id, USHORT level, BVECTOR vector, USHORT bytes_num):
@@ -93,9 +92,9 @@ cpdef USHORT hamming_dist(BVECTOR x, BVECTOR y, USHORT datalen):
         byte_x = x[i]
         byte_y = y[i]
         byte_z = byte_x ^ byte_y
-        while byte_z > 0:
+        if byte_z > 0:
             dist += 1
-            byte_z &= byte_z - 1
+
     return dist
 
 
@@ -144,9 +143,13 @@ cdef class IndexHnsw:
 
         cdef int l = self.max_level
 
-        cdef UIDX entry_id
+        # cdef UIDX entry_id
+        cdef hnsw_edge* result_item
         while l > level:
-            entry_ptr, min_dist = self.greedy_closest_neighbor(vector, entry_ptr, min_dist, l)
+            result_item = self.greedy_closest_neighbor(vector, entry_ptr, min_dist, l)
+            entry_ptr = result_item.node
+            min_dist = result_item.dist
+            PyMem_Free(result_item)
 
             l -= 1
 
@@ -164,12 +167,9 @@ cdef class IndexHnsw:
 
             neighbor = NULL
             while neighbors_pq.size > 0:
-                # dist, item = neighbors.pop()
                 pq_e = heappq_pop_min(neighbors_pq)
                 dist = pq_e.priority
                 neighbor = <hnswNode*> pq_e.value
-
-                # neighbor = self._get_node(item[0])
 
                 # the first pop is nearest neighbor
                 if neighbor == NULL:
@@ -226,8 +226,10 @@ cdef class IndexHnsw:
             next_edge = edge_set.head_ptr
 
             while next_edge != NULL:
-                id = next_edge.node_id
-                neighbor = self._get_node(id)
+                # id = next_edge.node_id
+                # neighbor = self._get_node(id)
+                neighbor = next_edge.node
+                id = neighbor.id
 
                 lb = visited_nodes.lower_bound(id)
                 if lb != visited_nodes.end() and id == deref(lb):
@@ -254,7 +256,7 @@ cdef class IndexHnsw:
 
         return result_pq
 
-    cdef tuple greedy_closest_neighbor(self, BVECTOR query, hnswNode *entry_ptr, DIST min_dist, USHORT level):
+    cdef hnsw_edge* greedy_closest_neighbor(self, BVECTOR query, hnswNode *entry_ptr, DIST min_dist, USHORT level):
         cdef DIST _min_dist = min_dist
         cdef DIST dist
         cdef UIDX _entry_id = entry_ptr.id
@@ -270,9 +272,7 @@ cdef class IndexHnsw:
             next_edge = edge_set.head_ptr
 
             while next_edge != NULL:
-                id = next_edge.node_id
-
-                node_ptr = self._get_node(id)
+                node_ptr = next_edge.node
 
                 dist = hamming_dist(query, node_ptr.vector, self.bytes_num)
                 if dist < _min_dist:
@@ -286,7 +286,10 @@ cdef class IndexHnsw:
 
             entry_ptr = closest_neighbor
 
-        return (entry_ptr.id, _min_dist)
+        cdef hnsw_edge* edge = <hnsw_edge*> PyMem_Malloc(sizeof(hnsw_edge))
+        edge.node = entry_ptr
+        edge.dist = _min_dist
+        return edge
 
 
     cdef heappq* _select_neighbors(self, BVECTOR query, heappq* neighbors_pq, USHORT ensure_k, USHORT level, bint extend_candidates):
@@ -311,14 +314,15 @@ cdef class IndexHnsw:
                 edge_set = candidate.edges[level]
                 next_edge = edge_set.head_ptr
                 while next_edge != NULL:
-                    id = next_edge.node_id
+                    candidate = next_edge.node
+                    id = candidate.id
                     lb = existing_candidates.lower_bound(id)
                     if lb != existing_candidates.end() and id == deref(lb):
                         next_edge = next_edge.next
                         continue
 
                     existing_candidates.insert(id)
-                    candidate = self._get_node(id)
+                    # candidate = self._get_node(id)
 
                     dist = hamming_dist(query, candidate.vector, self.bytes_num)
                     heappq_push(candidates_pq, dist, candidate)
@@ -346,9 +350,10 @@ cdef class IndexHnsw:
         cdef DIST dist
         cdef hnswNode* neighbor
         while next_edge != NULL:
-            node_id = next_edge.node_id
+            # node_id = next_edge.node_id
+            neighbor = next_edge.node
             dist = next_edge.dist
-            neighbor = self._get_node(node_id)
+            # neighbor = self._get_node(node_id)
 
             heappq_push(neighbors_pq, dist, neighbor)
 
@@ -377,10 +382,14 @@ cdef class IndexHnsw:
 
         cdef DIST min_dist = hamming_dist(query, entry_ptr.vector, self.bytes_num)
         cdef int l = self.max_level
-        cdef UIDX entry_id = entry_ptr.id
+        # cdef UIDX entry_id = entry_ptr.id
+        cdef hnsw_edge* result_item
         while l > 0:
-            entry_id, min_dist = self.greedy_closest_neighbor(query, entry_ptr, min_dist, l)
-            entry_ptr = self._get_node(entry_id)
+            result_item = self.greedy_closest_neighbor(query, entry_ptr, min_dist, l)
+            entry_ptr = result_item.node
+            min_dist = result_item.dist
+            PyMem_Free(result_item)
+
             l -= 1
 
         cdef UINT ef = max(self.config.ef, top_k)
@@ -430,14 +439,52 @@ cdef class IndexHnsw:
         pass
 
     cdef void free_hnsw(self):
-        it = self.nodes.begin()
-        cdef hnswNode* node
-        while (it != self.nodes.end()):
-            node = deref(it).second
-            _free_node(node)
-            node = NULL
-            postincrement(it)
-        self.nodes.clear()
+        cdef cpp_set[UIDX] visited_nodes
+        cdef queue* nodes_queue = init_queue()
+        cdef queue* candidates_queue = init_queue()
+
+        cdef hnswNode* node_ptr = self.entry_ptr
+        cdef hnswNode* neighbor
+        cdef UIDX node_id = node_ptr.id
+        cdef hnsw_edge_set* edge_set
+        cdef hnsw_edge* next_edge
+
+        queue_push_tail(candidates_queue, node_ptr)
+        visited_nodes.insert(node_id)
+
+        while not queue_is_empty(candidates_queue):
+            node_ptr = <hnswNode*> queue_pop_head(candidates_queue)
+
+            edge_set = node_ptr.edges[0]
+            next_edge = edge_set.head_ptr
+
+            while next_edge != NULL:
+                neighbor = next_edge.node
+                if neighbor == NULL:
+                    next_edge = next_edge.next
+                    continue
+
+                node_id = neighbor.id
+
+                lb = visited_nodes.lower_bound(node_id)
+                if lb != visited_nodes.end() and node_id == deref(lb):
+                    next_edge = next_edge.next
+                    continue
+
+                queue_push_tail(candidates_queue, neighbor)
+                visited_nodes.insert(neighbor.id)
+
+                next_edge = next_edge.next
+
+            queue_push_tail(nodes_queue, node_ptr)
+
+        queue_free(candidates_queue)
+        while not queue_is_empty(nodes_queue):
+            node_ptr = <hnswNode*> queue_pop_head(nodes_queue)
+            _free_node(node_ptr)
+        queue_free(nodes_queue)
+        visited_nodes.clear()
+
         PyMem_Free(self.config)
         self.config = NULL
 

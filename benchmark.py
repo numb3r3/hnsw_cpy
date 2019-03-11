@@ -61,7 +61,7 @@ if __name__ == '__main__':
                 # f_r = brute_force_query(flat_vectors, q, 10, bytes_num)
                 h_r = [(r['id'], int(r['distance'])) for r in hnsw.query(q, 10)]
                 # print(f_r)
-                print(h_r)
+                # print(h_r)
                 # print()
 
             _query_time_cost = []
@@ -71,8 +71,6 @@ if __name__ == '__main__':
                 hnsw.query(query_data, 10)
                 _query_time_cost.append(time.perf_counter() - query_start_t)
             query_time_cost.append(np.mean(_query_time_cost))
-
-            #hnsw.clear()
 
         build_t_avg = np.mean(build_time_cost)
         query_t_avg = np.mean(query_time_cost)

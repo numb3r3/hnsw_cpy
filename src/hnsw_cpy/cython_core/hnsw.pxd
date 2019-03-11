@@ -26,6 +26,7 @@ cdef struct hnswNode:
     USHORT level
     hnsw_edge_set** edges
 
+
 ctypedef cpp_map[UIDX, hnswNode*] nodes_map
 ctypedef cpp_pair[UIDX, hnswNode*] node_item
 

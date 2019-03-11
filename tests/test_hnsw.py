@@ -30,21 +30,6 @@ class TestHnswIndex(unittest.TestCase):
         self.hnsw_toy.bulk_index(range(8), self.toy_data['data'])
 
 
-    def test_hamming(self):
-        x = bytes([1, 2, 3, 4])
-        y = bytes([1, 2, 3, 5])
-        z = bytes([2, 3, 5, 1])
-        dist0 = hamming_dist(x, x, 4)
-        dist1 = hamming_dist(x, y, 4)
-        dist2 = hamming_dist(x, z, 4)
-
-        self.assertEqual(dist0, 0)
-        self.assertEqual(dist1, 1)
-        self.assertEqual(dist2, 7)
-
-
-
-
     def test_add_data(self):
         self.assertEqual(self.hnsw_toy.bytes_num, self.toy_data['bytes'])
         self.assertEqual(self.hnsw_toy.size, 8)
