@@ -17,6 +17,7 @@ cdef void free_heappq(heappq* pq):
             heappq_pop_max(pq)
         else:
             heappq_pop_min(pq)
+        i += 1
     PyMem_Free(pq)
 
 cdef void heappq_push(heappq* pq, float priority, value_t value):

@@ -341,12 +341,14 @@ cdef class IndexHnsw:
 
             free_heappq(neighbors_pq)
         else:
-            while neighbors_pq.size > 0:
-                pq_e = heappq_pop_min(neighbors_pq)
-                heappq_push(candidates_pq, pq_e.priority, pq_e.value)
-            free_heappq(neighbors_pq)
+            free_heappq(candidates_pq)
 
-            #candidates_pq = neighbors_pq
+            #while neighbors_pq.size > 0:
+            #    pq_e = heappq_pop_min(neighbors_pq)
+            #    heappq_push(candidates_pq, pq_e.priority, pq_e.value)
+            #free_heappq(neighbors_pq)
+
+            candidates_pq = neighbors_pq
 
 
         cdef heappq* result_pq = init_heappq()
