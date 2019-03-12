@@ -26,16 +26,16 @@ pylint src/**/*.py
 
 ## Usage
 
-Three core functions: `add()`, `query()`.
+Two core functions: `index()`,  `query()`.
 
 ```python
 from hnsw_cpy import HnswIndex
 import numpy as np
 
 
-bytes_per_vector = 8
+bytes_num = 8
 
-index = HnswIndex(bytes_per_vector=bytes_per_vector)
+index = HnswIndex(bytes_num=bytes_num)
 
 # random generate 10000 vectors
 data_size = 10000
