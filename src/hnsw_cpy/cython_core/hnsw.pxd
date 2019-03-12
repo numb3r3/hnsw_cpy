@@ -25,6 +25,7 @@ cdef struct hnswNode:
     BVECTOR vector
     USHORT level
     hnsw_edge_set** edges
+    hnswNode* next
 
 
 ctypedef cpp_map[UIDX, hnswNode*] nodes_map
