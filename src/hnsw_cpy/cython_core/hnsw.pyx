@@ -1,4 +1,5 @@
 # cython: language_level=3, wraparound=False, boundscheck=False
+# distutils: language=c++
 
 # noinspection PyUnresolvedReferences
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
@@ -252,7 +253,7 @@ cdef class IndexHnsw:
 
                 dist = hamming_dist(query, neighbor.vector, self.bytes_num)
 
-                if dist <= lower_bound or result_pq.size <= ef:
+                if dist < lower_bound or result_pq.size < ef:
                     heappq_push(candidates_pq, dist, neighbor)
                     heappq_push(result_pq, dist, neighbor)
 
