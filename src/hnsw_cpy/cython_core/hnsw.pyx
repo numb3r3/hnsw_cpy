@@ -541,7 +541,7 @@ cdef class IndexHnsw:
         self.config = <hnswConfig*> PyMem_Malloc(sizeof(hnswConfig))
         self.config.level_multiplier = kwargs.get('level_multiplier', -1)
         self.config.ef = kwargs.get('ef', 20)
-        self.config.ef_construction = kwargs.get('ef_construction', 150)
+        self.config.ef_construction = kwargs.get('ef_construction', 300)
         self.config.m = kwargs.get('m', 12)
         self.config.m_max = kwargs.get('m_max', -1)
         self.config.m_max_0 = kwargs.get('m_max_0', -1)
