@@ -41,6 +41,8 @@ cdef hnswNode* create_node(UIDX id, USHORT level, BVECTOR vector, USHORT bytes_n
 
          node.edges[l] = edge_set
 
+     # PyMem_Free(vector)
+
      return node
 
 cdef void _add_edge(hnswNode* f, hnswNode* t, DIST dist, UINT level):
@@ -313,7 +315,7 @@ cdef class IndexHnsw:
         cdef DIST dist
         cdef pq_entity* pq_e
 
-        if extend_candidates:
+        if extend_candidates and neighbors_pq.size < ensure_k:
             while neighbors_pq.size > 0:
                 pq_e = heappq_pop_min(neighbors_pq)
                 priority = pq_e.priority
@@ -339,7 +341,12 @@ cdef class IndexHnsw:
 
             free_heappq(neighbors_pq)
         else:
-            candidates_pq = neighbors_pq
+            while neighbors_pq.size > 0:
+                pq_e = heappq_pop_min(neighbors_pq)
+                heappq_push(candidates_pq, pq_e.priority, pq_e.value)
+            free_heappq(neighbors_pq)
+
+            #candidates_pq = neighbors_pq
 
 
         cdef heappq* result_pq = init_heappq()
