@@ -250,7 +250,7 @@ cdef class IndexHnsw:
 
                 dist = hamming_dist(query, neighbor.vector, self.bytes_num)
 
-                if dist < lower_bound or result_pq.size < ef:
+                if dist <= lower_bound or result_pq.size <= ef:
                     heappq_push(candidates_pq, dist, neighbor)
                     heappq_push(result_pq, dist, neighbor)
 
@@ -336,6 +336,8 @@ cdef class IndexHnsw:
 
                     dist = hamming_dist(query, candidate.vector, self.bytes_num)
                     heappq_push(candidates_pq, dist, candidate)
+
+            free_heappq(neighbors_pq)
         else:
             candidates_pq = neighbors_pq
 
@@ -408,7 +410,6 @@ cdef class IndexHnsw:
         cdef list result = []
 
         cdef pq_entity* pq_e
-        # cdef hnswNode* node
         cdef hnswNode* next_node
         cdef DIST dist
         while neighbors_pq.size > 0:
@@ -544,7 +545,6 @@ cdef class IndexHnsw:
         self.max_level = 0
 
     def __dealloc__(self):
-        # self.free_trie()
         self.free_hnsw()
 
     cpdef destroy(self):
