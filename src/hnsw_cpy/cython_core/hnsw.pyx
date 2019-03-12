@@ -8,7 +8,7 @@ from cpython cimport array
 
 from libc.stdlib cimport rand, RAND_MAX
 from libc.string cimport memcpy, strcpy
-from libc.math cimport log, floor
+from libc.math cimport log, floor, abs
 
 from libcpp.set cimport set as cpp_set
 
@@ -239,8 +239,6 @@ cdef class IndexHnsw:
             next_edge = edge_set.head_ptr
 
             while next_edge != NULL:
-                # id = next_edge.node_id
-                # neighbor = self._get_node(id)
                 neighbor = next_edge.node
                 id = neighbor.id
 
@@ -273,7 +271,7 @@ cdef class IndexHnsw:
         cdef DIST _min_dist = min_dist
         cdef DIST dist
         cdef UIDX _entry_id = entry_ptr.id
-        cdef hnswNode *node_ptr
+        cdef hnswNode *node_ptr = entry_ptr
         cdef hnswNode *closest_neighbor
 
         cdef hnsw_edge_set* edge_set
@@ -281,7 +279,7 @@ cdef class IndexHnsw:
 
         while True:
             closest_neighbor = NULL
-            edge_set = entry_ptr.edges[level]
+            edge_set = node_ptr.edges[level]
             next_edge = edge_set.head_ptr
 
             while next_edge != NULL:
@@ -297,10 +295,10 @@ cdef class IndexHnsw:
             if closest_neighbor == NULL:
                 break
 
-            entry_ptr = closest_neighbor
+            node_ptr = closest_neighbor
 
         cdef hnsw_edge* edge = <hnsw_edge*> PyMem_Malloc(sizeof(hnsw_edge))
-        edge.node = entry_ptr
+        edge.node = node_ptr
         edge.dist = _min_dist
         return edge
 
@@ -368,20 +366,18 @@ cdef class IndexHnsw:
 
         cdef hnsw_edge_set* edge_set = node.edges[level]
         cdef hnsw_edge* next_edge = edge_set.head_ptr
-        cdef UIDX node_id
+
         cdef DIST dist
         cdef hnswNode* neighbor
         while next_edge != NULL:
-            # node_id = next_edge.node_id
             neighbor = next_edge.node
             dist = next_edge.dist
-            # neighbor = self._get_node(node_id)
 
             heappq_push(neighbors_pq, dist, neighbor)
 
             next_edge = next_edge.next
 
-        neighbors_pq = self._select_neighbors(node.vector, neighbors_pq, self.config.m, level, True)
+        neighbors_pq = self._select_neighbors(node.vector, neighbors_pq, k, level, True)
 
         _empty_edge_set(node, level)
         cdef pq_entity* pq_e
@@ -410,6 +406,7 @@ cdef class IndexHnsw:
             entry_ptr = result_item.node
             min_dist = result_item.dist
             PyMem_Free(result_item)
+            # print('min_dist: ' + str(min_dist) + ' at level: ' + str(l))
 
             l -= 1
 
@@ -460,13 +457,8 @@ cdef class IndexHnsw:
 
         return result
 
-    cpdef void save_model(self, model_path):
-        pass
 
-    cpdef void load_model(self, model_path):
-        pass
-
-    cdef void free_hnsw(self):
+    cdef queue* _get_nodes(self):
         cdef cpp_set[UIDX] visited_nodes
         cdef queue* nodes_queue = init_queue()
         cdef queue* candidates_queue = init_queue()
@@ -507,11 +499,23 @@ cdef class IndexHnsw:
             queue_push_tail(nodes_queue, node_ptr)
 
         queue_free(candidates_queue)
+        visited_nodes.clear()
+
+        return nodes_queue
+
+    cpdef void save_model(self, model_path):
+        pass
+
+
+    cpdef void load_model(self, model_path):
+        pass
+
+    cdef void free_hnsw(self):
+        cdef queue* nodes_queue = self._get_nodes()
         while not queue_is_empty(nodes_queue):
             node_ptr = <hnswNode*> queue_pop_head(nodes_queue)
             _free_node(node_ptr)
         queue_free(nodes_queue)
-        visited_nodes.clear()
 
         PyMem_Free(self.config)
         self.config = NULL
