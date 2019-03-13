@@ -174,7 +174,6 @@ cdef class IndexHnsw:
         while l >= 0:
             # navigate the graph and create edges with the closest nodes we find
             neighbors_pq = self.search_level(vector, entry_ptr, self.config.ef_construction, l)
-
             selected_pq = self._select_neighbors(vector, neighbors_pq, self.config.m, l, True)
             free_heappq(neighbors_pq)
 
@@ -268,6 +267,8 @@ cdef class IndexHnsw:
                     if result_pq.size > ef:
                         _e = heappq_pop_max(result_pq)
                         PyMem_Free(_e)
+                # elif dist == lower_bound:
+                #    heappq_push(candidates_pq, dist, neighbor)
 
                 next_edge = next_edge.next
 
@@ -275,6 +276,8 @@ cdef class IndexHnsw:
 
         free_heappq(candidates_pq)
         candidates_pq = NULL
+        #if result_pq.size < ef:
+        #    print('search size: ' + str(result_pq.size) + ' / ef: ' + str(ef))
 
         return result_pq
 
@@ -345,11 +348,12 @@ cdef class IndexHnsw:
                 pq_e = heappq_pop_min(neighbors_pq)
                 priority = pq_e.priority
                 candidate = <hnswNode*> pq_e.value
-
-                heappq_push(result_pq, priority, pq_e.value)
-
                 PyMem_Free(pq_e)
 
+                if candidate.id in visited_nodes:
+                    continue
+
+                heappq_push(result_pq, priority, candidate)
                 visited_nodes.add(candidate.id)
 
                 edge_set = candidate.edges[level]
@@ -360,6 +364,7 @@ cdef class IndexHnsw:
                     if candidate.id in visited_nodes:
                         next_edge = next_edge.next
                         continue
+
                     visited_nodes.add(candidate.id)
 
                     dist = hamming_dist(query, candidate.vector, self.bytes_num)
