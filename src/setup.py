@@ -12,7 +12,6 @@ extensions = [
             ['hnsw_cpy/cython_core/hnsw.pyx'],
             extra_compile_args=[
                 '-O3'],
-            language="c++",
         ),
         Extension(
             'hnsw_cpy.cython_core.heappq',

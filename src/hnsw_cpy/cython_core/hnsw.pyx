@@ -1,5 +1,4 @@
 # cython: language_level=3, wraparound=False, boundscheck=False
-# distutils: language=c++
 
 # noinspection PyUnresolvedReferences
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
@@ -9,12 +8,6 @@ from cpython cimport array
 from libc.stdlib cimport rand, RAND_MAX
 from libc.string cimport memcpy, strcpy
 from libc.math cimport log, floor, abs
-
-from libcpp.set cimport set as cpp_set
-
-from cython.operator cimport dereference as deref
-from cython.operator cimport preincrement as preinc
-from cython.operator cimport postincrement
 
 from hnsw_cpy.cython_core.heappq cimport heappq, pq_entity, init_heappq, free_heappq, heappq_push, heappq_pop_min, heappq_peak_min, heappq_pop_max, heappq_peak_max
 from hnsw_cpy.cython_core.queue cimport queue, init_queue, queue_push_tail, queue_pop_head, queue_free, queue_is_empty
@@ -490,18 +483,17 @@ cdef class IndexHnsw:
 
 
     cdef queue* _get_nodes(self):
-        cdef cpp_set[UIDX] visited_nodes
+        cdef set visited_nodes = set()
         cdef queue* nodes_queue = init_queue()
         cdef queue* candidates_queue = init_queue()
 
         cdef hnswNode* node_ptr = self.entry_ptr
         cdef hnswNode* neighbor
-        cdef UIDX node_id = node_ptr.id
         cdef hnsw_edge_set* edge_set
         cdef hnsw_edge* next_edge
 
         queue_push_tail(candidates_queue, node_ptr)
-        visited_nodes.insert(node_id)
+        visited_nodes.add(node_ptr.id)
 
         while not queue_is_empty(candidates_queue):
             node_ptr = <hnswNode*> queue_pop_head(candidates_queue)
@@ -515,15 +507,12 @@ cdef class IndexHnsw:
                     next_edge = next_edge.next
                     continue
 
-                node_id = neighbor.id
-
-                lb = visited_nodes.lower_bound(node_id)
-                if lb != visited_nodes.end() and node_id == deref(lb):
+                if neighbor.id in visited_nodes:
                     next_edge = next_edge.next
                     continue
 
                 queue_push_tail(candidates_queue, neighbor)
-                visited_nodes.insert(neighbor.id)
+                visited_nodes.add(neighbor.id)
 
                 next_edge = next_edge.next
 
