@@ -8,11 +8,6 @@ import random
 
 class TestPriorityQueue(unittest.TestCase):
     def setUp(self):
-        self.entries = [(("a", 123), 3),
-                        (("b", [1, 2, 3]), 2),
-                        (("c", "hello"), 6),
-                        (("d", "world"), 4)]
-
         self.entries = [("x", x) for x in range(1, 10000)]
         random.shuffle(self.entries)
 
