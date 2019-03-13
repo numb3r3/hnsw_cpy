@@ -290,15 +290,19 @@ cdef class IndexHnsw:
     cdef hnsw_edge* greedy_closest_neighbor(self, BVECTOR query, hnswNode *entry_ptr, DIST min_dist, USHORT level):
         cdef DIST _min_dist = min_dist
         cdef DIST dist
-        cdef UIDX _entry_id = entry_ptr.id
-        cdef hnswNode *node_ptr = entry_ptr
-        cdef hnswNode *closest_neighbor
+
+        cdef hnswNode *node_ptr
+        cdef hnswNode *closest_neighbor = entry_ptr
 
         cdef hnsw_edge_set* edge_set
         cdef hnsw_edge* next_edge
 
-        while True:
-            closest_neighbor = NULL
+        cdef queue* candidates = init_queue()
+        queue_push_tail(candidates, entry_ptr)
+
+        while not queue_is_empty(candidates):
+            node_ptr = <hnswNode*> queue_pop_head(candidates)
+
             edge_set = node_ptr.edges[level]
             next_edge = edge_set.head_ptr
 
@@ -309,16 +313,20 @@ cdef class IndexHnsw:
                 if dist < _min_dist:
                     _min_dist = dist
                     closest_neighbor = node_ptr
+                    queue_free(candidates)
+                    while not queue_is_empty(candidates):
+                        queue_pop_head(candidates)
+                    queue_push_tail(candidates, node_ptr)
+
+                elif dist == _min_dist:
+                    queue_push_tail(candidates, node_ptr)
 
                 next_edge = next_edge.next
 
-            if closest_neighbor == NULL:
-                break
-
-            node_ptr = closest_neighbor
+        queue_free(candidates)
 
         cdef hnsw_edge* edge = <hnsw_edge*> PyMem_Malloc(sizeof(hnsw_edge))
-        edge.node = node_ptr
+        edge.node = closest_neighbor
         edge.dist = _min_dist
         return edge
 
