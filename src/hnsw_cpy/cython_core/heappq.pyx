@@ -83,6 +83,8 @@ cdef pq_entity* heappq_pop_min(heappq* pq):
            pq.min_node = parent_node
         else:
            pq.root = NULL
+           pq.min_node = NULL
+           pq.max_node = NULL
         # pq.min_node = parent_node
     else:
         if parent_node == NULL:
@@ -124,6 +126,8 @@ cdef pq_entity* heappq_pop_max(heappq* pq):
             pq.max_node = parent_node
         else:
             pq.root = NULL
+            pq.min_node = NULL
+            pq.max_node = NULL
         # pq.max_node = parent_node
     else:
         if parent_node == NULL:
