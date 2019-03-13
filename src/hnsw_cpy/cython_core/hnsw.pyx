@@ -370,6 +370,7 @@ cdef class IndexHnsw:
 
         while result_pq.size > ensure_k:
             pq_e = heappq_pop_max(result_pq)
+            PyMem_Free(pq_e)
 
         visited_nodes.clear()
 
