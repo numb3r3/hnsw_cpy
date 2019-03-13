@@ -136,17 +136,22 @@ cdef class IndexHnsw:
         self._add_node(id, vector)
 
     cdef void _add_node(self, UIDX id, BVECTOR vector):
+        """Add node to the hnsw graph"""
+
         cdef hnswNode* new_node
         cdef hnswNode* entry_ptr = self.entry_ptr
         self.total_size += 1
 
+        # create the root node at level 0
         if entry_ptr == NULL:
-            # create the root node at level 0
             new_node = create_node(id, 0, vector, self.bytes_num)
             self.entry_ptr = new_node
 
             return
 
+        # the HNSW is not empty, we have an entry point
+
+        # level at which the node will be added
         cdef USHORT level = self._random_level()
         new_node = create_node(id, level, vector, self.bytes_num)
 
@@ -154,9 +159,9 @@ cdef class IndexHnsw:
 
         cdef int l = self.max_level
 
-        # cdef UIDX entry_id
         cdef hnsw_edge* result_item
         while l > level:
+            # search for the closest neighbor
             result_item = self.greedy_closest_neighbor(vector, entry_ptr, min_dist, l)
             entry_ptr = result_item.node
             min_dist = result_item.dist
@@ -174,6 +179,7 @@ cdef class IndexHnsw:
         cdef pq_entity* pq_e
 
         while l >= 0:
+            # navigate the graph and create edges with the closest nodes we find
             neighbors_pq = self.search_level(vector, entry_ptr, self.config.ef_construction, l)
 
             neighbors_pq = self._select_neighbors(vector, neighbors_pq, self.config.m, l, True)
