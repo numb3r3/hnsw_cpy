@@ -96,6 +96,7 @@ cpdef USHORT hamming_dist(BVECTOR x, BVECTOR y, USHORT datalen):
         byte_x = x[i]
         byte_y = y[i]
         byte_z = byte_x ^ byte_y
+
         if byte_z > 0:
             dist += 1
 
@@ -159,9 +160,11 @@ cdef class IndexHnsw:
             result_item = self.greedy_closest_neighbor(vector, entry_ptr, min_dist, l)
             entry_ptr = result_item.node
             min_dist = result_item.dist
+
             PyMem_Free(result_item)
 
             l -= 1
+
 
         l = min(self.max_level, level)
         cdef hnswNode* neighbor
@@ -174,6 +177,7 @@ cdef class IndexHnsw:
             neighbors_pq = self.search_level(vector, entry_ptr, self.config.ef_construction, l)
 
             neighbors_pq = self._select_neighbors(vector, neighbors_pq, self.config.m, l, True)
+
             pq_e = heappq_peak_min(neighbors_pq)
             if pq_e.priority == 0:
                 neighbor = <hnswNode*> pq_e.value
@@ -406,7 +410,6 @@ cdef class IndexHnsw:
             entry_ptr = result_item.node
             min_dist = result_item.dist
             PyMem_Free(result_item)
-            # print('min_dist: ' + str(min_dist) + ' at level: ' + str(l))
 
             l -= 1
 
@@ -541,7 +544,7 @@ cdef class IndexHnsw:
         self.config = <hnswConfig*> PyMem_Malloc(sizeof(hnswConfig))
         self.config.level_multiplier = kwargs.get('level_multiplier', -1)
         self.config.ef = kwargs.get('ef', 20)
-        self.config.ef_construction = kwargs.get('ef_construction', 300)
+        self.config.ef_construction = kwargs.get('ef_construction', 150)
         self.config.m = kwargs.get('m', 12)
         self.config.m_max = kwargs.get('m_max', -1)
         self.config.m_max_0 = kwargs.get('m_max_0', -1)

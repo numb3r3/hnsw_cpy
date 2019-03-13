@@ -26,6 +26,12 @@ extensions = [
             extra_compile_args=[
                 '-O3'],
         ),
+        Extension(
+            'hnsw_cpy.cython_core.prehash',
+            ['hnsw_cpy/cython_core/prehash.pyx'],
+            extra_compile_args=[
+                '-O3'],
+        ),
 ]
 
 

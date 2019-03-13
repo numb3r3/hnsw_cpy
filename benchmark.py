@@ -2,6 +2,9 @@ import time
 
 import numpy as np
 from hnsw_cpy import HnswIndex
+from hnsw_cpy.cython_core.heappq import PriorityQueue
+from hnsw_cpy.cython_core.hnsw import hamming_dist
+
 
 def toy_data_generator(size, bytes_num):
     index = -1
@@ -10,13 +13,26 @@ def toy_data_generator(size, bytes_num):
         index += 1
         yield (index, tmp.tobytes())
 
+def brute_force_query(flat_vectors, query: bytes, top_k: int, bytes_num: int):
+    pq = PriorityQueue()
+    for i, vector in enumerate(flat_vectors):
+        dist = hamming_dist(vector, query, bytes_num)
+        pq.push(dist, (i, "a"))
+
+    result = []
+    for i in range(top_k):
+        dist, item = pq.pop_min()
+        result.append((item[0], dist))
+
+    return result
+
 
 if __name__ == '__main__':
     bytes_num = 20
     #max_iter = 5
     #num_repeat = 3
     data_size = 10000
-    query_size = 512
+    query_size = 125
     total_size = 0
 
     print(f'Benchmarking for HNSW indexer')
@@ -46,8 +62,10 @@ if __name__ == '__main__':
         for qid in range(query_size):
             # query_data = np.random.randint(1, 255, bytes_num, dtype=np.uint8).tobytes()
             query_data = flat_vectors[qid]
+            #f_r = [(r[0], r[1]) for r in brute_force_query(flat_vectors, query_data, 10, bytes_num)]
             # hnsw.query(query_data, 10)
             h_r = [(r['id'], int(r['distance'])) for r in hnsw.query(query_data, 10)]
+            #print(f_r)
             print(h_r)
             _query_time_cost.append(time.perf_counter() - query_start_t)
         query_time_cost.append(np.mean(_query_time_cost))

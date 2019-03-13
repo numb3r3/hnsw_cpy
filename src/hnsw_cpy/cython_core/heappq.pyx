@@ -1,6 +1,7 @@
 # cython: language_level=3
 
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
+cimport cpython
 
 cdef heappq* init_heappq():
     cdef heappq* pq = <heappq*> PyMem_Malloc(sizeof(heappq))
@@ -158,6 +159,12 @@ cdef pq_entity* heappq_peak_max(heappq* pq):
         return NULL
     return pq.max_node.entity
 
+cdef inline object fromvoidptr(void *a):
+     cdef cpython.PyObject *o
+     o = <cpython.PyObject *> a
+     cpython.Py_XINCREF(o)
+     return <object> o
+
 
 cdef class PriorityQueue(object):
     cdef heappq* pq
@@ -172,13 +179,13 @@ cdef class PriorityQueue(object):
         cdef pq_entity* e = heappq_peak_min(self.pq)
         if e == NULL:
             return (None, None)
-        return (e.priority, <object> e.value)
+        return (e.priority, fromvoidptr(e.value))
 
     def peak_max(self):
         cdef pq_entity* e = heappq_peak_max(self.pq)
         if e == NULL:
             return (None, None)
-        return (e.priority, <object> e.value)
+        return (e.priority, fromvoidptr(e.value))
 
     def empty(self):
         return self.pq.size == 0
@@ -187,17 +194,20 @@ cdef class PriorityQueue(object):
         cdef pq_entity* e = heappq_pop_min(self.pq)
         if e == NULL:
             return (None, None)
-        return (e.priority, <object> e.value)
+        return (e.priority, fromvoidptr(e.value))
 
     def pop_max(self):
         cdef pq_entity* e = heappq_pop_max(self.pq)
         if e == NULL:
             return (None, None)
-        return (e.priority, <object> e.value)
+        return (e.priority, fromvoidptr(e.value))
 
     @property
     def size(self):
         return self.pq.size
 
     def __dealloc__(self):
+        free_heappq(self.pq)
+
+    def free(self):
         free_heappq(self.pq)
