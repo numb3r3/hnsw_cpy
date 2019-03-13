@@ -296,9 +296,11 @@ cdef class IndexHnsw:
 
         cdef hnsw_edge_set* edge_set
         cdef hnsw_edge* next_edge
+        cdef set visited_nodes = set()
 
         cdef queue* candidates = init_queue()
         queue_push_tail(candidates, entry_ptr)
+        visited_nodes.add(entry_ptr.id)
 
         while not queue_is_empty(candidates):
             node_ptr = <hnswNode*> queue_pop_head(candidates)
@@ -308,6 +310,11 @@ cdef class IndexHnsw:
 
             while next_edge != NULL:
                 node_ptr = next_edge.node
+
+                if node_ptr.id in visited_nodes:
+                    next_edge = next_edge.next
+                    continue
+                visited_nodes.add(node_ptr.id)
 
                 dist = hamming_dist(query, node_ptr.vector, self.bytes_num)
                 if dist < _min_dist:
