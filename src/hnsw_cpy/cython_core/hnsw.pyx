@@ -290,15 +290,17 @@ cdef class IndexHnsw:
     cdef hnsw_edge* greedy_closest_neighbor(self, BVECTOR query, hnswNode *entry_ptr, DIST min_dist, USHORT level):
         cdef DIST _min_dist = min_dist
         cdef DIST dist
-        cdef UIDX _entry_id = entry_ptr.id
+
         cdef hnswNode *node_ptr = entry_ptr
-        cdef hnswNode *closest_neighbor
+        cdef hnswNode *closest_neighbor = entry_ptr
 
         cdef hnsw_edge_set* edge_set
         cdef hnsw_edge* next_edge
 
+        cdef bint new_closest
+
         while True:
-            closest_neighbor = NULL
+            new_closest = 0
             edge_set = node_ptr.edges[level]
             next_edge = edge_set.head_ptr
 
@@ -307,18 +309,19 @@ cdef class IndexHnsw:
 
                 dist = hamming_dist(query, node_ptr.vector, self.bytes_num)
                 if dist < _min_dist:
+                    new_closest = 1
                     _min_dist = dist
                     closest_neighbor = node_ptr
 
                 next_edge = next_edge.next
 
-            if closest_neighbor == NULL:
+            if not new_closest:
                 break
 
             node_ptr = closest_neighbor
 
         cdef hnsw_edge* edge = <hnsw_edge*> PyMem_Malloc(sizeof(hnsw_edge))
-        edge.node = node_ptr
+        edge.node = closest_neighbor
         edge.dist = _min_dist
         return edge
 
