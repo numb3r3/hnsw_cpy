@@ -329,6 +329,7 @@ cdef class IndexHnsw:
                 elif dist == _min_dist:
                     queue_push_tail(candidates, node_ptr)
 
+
                 next_edge = next_edge.next
 
         queue_free(candidates)
