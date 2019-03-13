@@ -359,6 +359,7 @@ cdef class IndexHnsw:
                     dist = hamming_dist(query, candidate.vector, self.bytes_num)
 
                     heappq_push(result_pq, dist, candidate)
+                    next_edge = next_edge.next
 
         else:
             while neighbors_pq.size > 0:
