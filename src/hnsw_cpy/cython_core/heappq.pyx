@@ -166,6 +166,7 @@ cdef inline object fromvoidptr(void *a):
      return <object> o
 
 
+
 cdef class PriorityQueue(object):
     cdef heappq* pq
 
@@ -187,7 +188,7 @@ cdef class PriorityQueue(object):
             return (None, None)
         return (e.priority, fromvoidptr(e.value))
 
-    def empty(self):
+    def is_empty(self):
         return self.pq.size == 0
 
     def pop_min(self):
