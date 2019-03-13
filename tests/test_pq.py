@@ -1,6 +1,9 @@
 import unittest
 
 from hnsw_cpy.cython_core.heappq import PriorityQueue
+import numpy as np
+import random
+
 
 
 class TestPriorityQueue(unittest.TestCase):
@@ -10,6 +13,9 @@ class TestPriorityQueue(unittest.TestCase):
                         (("c", "hello"), 6),
                         (("d", "world"), 4)]
 
+        self.entries = [("x", x) for x in range(1, 10000)]
+        random.shuffle(self.entries)
+
         self.pq = PriorityQueue()
         for item, weight in self.entries:
             self.pq.push(weight, item)
@@ -17,16 +23,19 @@ class TestPriorityQueue(unittest.TestCase):
 
     def test_push(self):
         self.pq.push(0, ("e", 100))
-        self.assertEqual(self.pq.size, 5)
+        self.assertEqual(self.pq.size, 10000)
 
         weight, item = self.pq.pop_min()
         self.assertEqual(weight, 0)
-        self.assertEqual(item[0], "e")
-        self.assertEqual(item[1], 100)
+
+        self.pq.push(10000, ("x"))
+        self.assertEqual(self.pq.size, 10000)
+        weight, item = self.pq.pop_max()
+        self.assertEqual(weight, 10000)
 
 
     def test_pop_min(self):
-        expects = [2.0, 3.0, 4.0, 6.0]
+        expects = list(range(1, 10000))
         i = 0
         while self.pq.size > 0:
             weight, item = self.pq.pop_min()
@@ -35,7 +44,7 @@ class TestPriorityQueue(unittest.TestCase):
 
 
     def test_pop_max(self):
-        expects = [2.0, 3.0, 4.0, 6.0][::-1]
+        expects = list(range(1, 10000))[::-1]
         i = 0
         while self.pq.size > 0:
             weight, item = self.pq.pop_max()
