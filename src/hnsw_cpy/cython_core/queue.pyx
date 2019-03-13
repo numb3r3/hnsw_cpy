@@ -60,7 +60,7 @@ cdef queue_value queue_peak_head(queue *q_ptr):
 cdef void queue_push_tail(queue *q_ptr, queue_value data):
     cdef queue_entry* entry = <queue_entry*> PyMem_Malloc(sizeof(queue_entry))
     entry.data = data
-    entry.prev = NULL
+    entry.prev = q_ptr.tail
     entry.next = NULL
 
     if q_ptr.tail == NULL:
