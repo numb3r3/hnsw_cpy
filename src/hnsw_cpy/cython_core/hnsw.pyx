@@ -313,7 +313,6 @@ cdef class IndexHnsw:
                 if dist < _min_dist:
                     _min_dist = dist
                     closest_neighbor = node_ptr
-                    queue_free(candidates)
                     while not queue_is_empty(candidates):
                         queue_pop_head(candidates)
                     queue_push_tail(candidates, node_ptr)
