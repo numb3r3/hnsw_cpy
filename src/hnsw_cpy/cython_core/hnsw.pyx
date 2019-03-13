@@ -319,7 +319,6 @@ cdef class IndexHnsw:
 
                 dist = hamming_dist(query, node_ptr.vector, self.bytes_num)
                 if dist < _min_dist:
-                    new_closest = 1
                     _min_dist = dist
                     closest_neighbor = node_ptr
                     while not queue_is_empty(candidates):
