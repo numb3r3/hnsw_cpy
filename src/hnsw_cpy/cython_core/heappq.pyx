@@ -69,8 +69,11 @@ cdef void heappq_push(heappq* pq, float priority, value_t value):
         else:
             new_min_node = 0
             new_max_node = 0
+            if start_node.child != NULL:
+                start_node.child.parent = new_node
+                new_node.child = start_node.child
+
             new_node.parent = start_node
-            new_node.child = start_node.child
             start_node.child = new_node
             break
 
