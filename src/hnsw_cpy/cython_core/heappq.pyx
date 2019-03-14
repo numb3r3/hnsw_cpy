@@ -13,12 +13,15 @@ cdef heappq* init_heappq():
 
 cdef void free_heappq(heappq* pq):
     cdef unsigned int i = 0
+    cdef pq_entity* e
     while pq.size > 0:
         if i % 2 == 0:
-            heappq_pop_max(pq)
+            e = heappq_pop_max(pq)
         else:
-            heappq_pop_min(pq)
+            e = heappq_pop_min(pq)
+        PyMem_Free(e)
         i += 1
+
     PyMem_Free(pq)
 
 cdef void heappq_push(heappq* pq, float priority, value_t value):
@@ -29,6 +32,7 @@ cdef void heappq_push(heappq* pq, float priority, value_t value):
     cdef pq_node* new_node = <pq_node*> PyMem_Malloc(sizeof(pq_node))
     new_node.entity = entity
     new_node.parent = NULL
+    new_node.child = NULL
     new_node.left = NULL
     new_node.right = NULL
 
@@ -53,14 +57,21 @@ cdef void heappq_push(heappq* pq, float priority, value_t value):
                 new_node.parent = start_node
                 start_node.right = new_node
                 break
-        elif start_node.left != NULL:
+        elif priority < start_node.entity.priority:
             new_max_node = 0
-            start_node = start_node.left
+            if start_node.left != NULL:
+                start_node = start_node.left
+            else:
+                new_node.parent = start_node
+                start_node.left = new_node
+                break
         else:
+            new_min_node = 0
             new_max_node = 0
             new_node.parent = start_node
-            start_node.left = new_node
+            start_node.child = new_node
             break
+
     if new_min_node:
         pq.min_node = new_node
     elif new_max_node:
@@ -75,17 +86,36 @@ cdef pq_entity* heappq_pop_min(heappq* pq):
 
     cdef pq_node* result_node = pq.min_node
     cdef pq_node* parent_node = result_node.parent
+    cdef pq_node* child_node = result_node.child
     cdef pq_node* right_node = result_node.right
 
-    if right_node == NULL:
+    if child_node != NULL:
+
+        if pq.min_node == pq.max_node:
+            pq.max_node = child_node
+
+        pq.min_node = child_node
+
+        if right_node != NULL:
+            child_node.right = right_node
+            right_node.parent = child_node
+
         if parent_node != NULL:
-           parent_node.left = NULL
-           pq.min_node = parent_node
+            child_node.parent = parent_node
+            parent_node.left = child_node
         else:
-           pq.root = NULL
-           pq.min_node = NULL
-           pq.max_node = NULL
-        # pq.min_node = parent_node
+           child_node.parent = NULL
+           pq.root = child_node
+
+    elif right_node == NULL:
+        if parent_node != NULL:
+            parent_node.left = NULL
+            pq.min_node = parent_node
+        else:
+            pq.root = NULL
+            pq.min_node = NULL
+            pq.max_node = NULL
+
     else:
         if parent_node == NULL:
             right_node.parent = NULL
@@ -98,12 +128,14 @@ cdef pq_entity* heappq_pop_min(heappq* pq):
         pq.min_node = right_node
         while pq.min_node.left != NULL:
             pq.min_node = pq.min_node.left
+        pq.min_node.left = NULL
 
     cdef pq_entity* result = result_node.entity
     result_node.entity = NULL
     result_node.left = NULL
     result_node.right = NULL
     result_node.parent = NULL
+    result_node.child = NULL
     PyMem_Free(result_node)
     result_node = NULL
 
@@ -118,9 +150,29 @@ cdef pq_entity* heappq_pop_max(heappq* pq):
 
     cdef pq_node* result_node = pq.max_node
     cdef pq_node* parent_node = result_node.parent
-    cdef pq_node* left_node =result_node.left
+    cdef pq_node* child_node = result_node.child
+    cdef pq_node* left_node = result_node.left
 
-    if left_node == NULL:
+    if child_node != NULL:
+
+
+        if pq.min_node == pq.max_node:
+            pq.min_node = child_node
+
+        pq.max_node = child_node
+
+        if left_node != NULL:
+            child_node.left = left_node
+            left_node.parent = child_node
+
+        if parent_node != NULL:
+            child_node.parent = parent_node
+            parent_node.right = child_node
+        else:
+            child_node.parent = NULL
+            pq.root = child_node
+
+    elif left_node == NULL:
         if parent_node != NULL:
             parent_node.right = NULL
             pq.max_node = parent_node
@@ -128,7 +180,7 @@ cdef pq_entity* heappq_pop_max(heappq* pq):
             pq.root = NULL
             pq.min_node = NULL
             pq.max_node = NULL
-        # pq.max_node = parent_node
+
     else:
         if parent_node == NULL:
             left_node.parent = NULL
@@ -138,16 +190,17 @@ cdef pq_entity* heappq_pop_max(heappq* pq):
             left_node.parent = parent_node
             parent_node.right = left_node
 
-
         pq.max_node = left_node
         while pq.max_node.right != NULL:
             pq.max_node = pq.max_node.right
+        pq.max_node.right = NULL
 
     cdef pq_entity* result = result_node.entity
     result_node.entity = NULL
     result_node.left = NULL
     result_node.right = NULL
     result_node.parent = NULL
+    result_node.child = NULL
     PyMem_Free(result_node)
 
     return result
@@ -184,12 +237,14 @@ cdef class PriorityQueue(object):
         cdef pq_entity* e = heappq_peak_min(self.pq)
         if e == NULL:
             return (None, None)
+
         return (e.priority, fromvoidptr(e.value))
 
     def peak_max(self):
         cdef pq_entity* e = heappq_peak_max(self.pq)
         if e == NULL:
             return (None, None)
+
         return (e.priority, fromvoidptr(e.value))
 
     def is_empty(self):
@@ -199,13 +254,22 @@ cdef class PriorityQueue(object):
         cdef pq_entity* e = heappq_pop_min(self.pq)
         if e == NULL:
             return (None, None)
-        return (e.priority, fromvoidptr(e.value))
+
+        cdef object o = fromvoidptr(e.value)
+        cdef float p = e.priority
+        PyMem_Free(e)
+
+        return (p, o)
 
     def pop_max(self):
         cdef pq_entity* e = heappq_pop_max(self.pq)
         if e == NULL:
             return (None, None)
-        return (e.priority, fromvoidptr(e.value))
+        cdef object o = fromvoidptr(e.value)
+        cdef float p = e.priority
+        PyMem_Free(e)
+
+        return (p, o)
 
     @property
     def size(self):

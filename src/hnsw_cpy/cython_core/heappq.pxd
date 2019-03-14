@@ -11,6 +11,7 @@ cdef struct pq_node:
     pq_node* parent
     pq_node* left
     pq_node* right
+    pq_node* child
     pq_entity* entity
 
 
