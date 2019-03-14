@@ -182,7 +182,6 @@ cdef class IndexHnsw:
                 neighbor = <hnswNode*> pq_e.value
                 neighbor.next = new_node
                 level = neighbor.level
-                PyMem_Free(pq_e)
                 free_heappq(selected_pq)
                 break
 

@@ -21,7 +21,7 @@ cdef void free_heappq(heappq* pq):
         else:
             e = heappq_pop_min(pq)
         e.value = NULL
-        # PyMem_Free(e)
+        PyMem_Free(e)
         i += 1
 
     PyMem_Free(pq)
