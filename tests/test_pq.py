@@ -15,6 +15,12 @@ class TestPriorityQueue(unittest.TestCase):
         for item, weight in self.entries:
             self.pq.push(weight, item)
 
+    def test_push_dumplicates(self):
+        for item, weight in [("x", x) for x in range(0, 10001)]:
+            self.pq.push(weight, item)
+
+        self.assertEqual(self.pq.size, 20000)
+
 
     def test_push(self):
         self.pq.push(0, ("e", 100))
@@ -25,6 +31,7 @@ class TestPriorityQueue(unittest.TestCase):
 
         self.pq.push(10000, ("x"))
         self.assertEqual(self.pq.size, 10000)
+
         weight, item = self.pq.pop_max()
         self.assertEqual(weight, 10000)
 
