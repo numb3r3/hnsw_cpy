@@ -48,11 +48,11 @@ if __name__ == '__main__':
         build_time_cost.clear()
         query_time_cost.clear()
 
-
+        flat_vectors.clear()
         build_start_t = time.perf_counter()
         for i, data in toy_data_generator(data_size, bytes_num):
             hnsw.index(total_size+i, data)
-            if total_size < query_size:
+            if i < query_size:
                 flat_vectors.append(data)
         build_time_cost.append(time.perf_counter() - build_start_t)
         total_size += data_size
