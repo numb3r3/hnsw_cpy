@@ -225,6 +225,7 @@ cdef class IndexHnsw:
         visited_nodes.add(entry_ptr.id)
 
         cdef hnswNode* candidate
+        cdef hnswNode* neighbor
 
         cdef DIST lower_bound
 

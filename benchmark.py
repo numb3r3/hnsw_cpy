@@ -17,7 +17,7 @@ def brute_force_query(flat_vectors, query: bytes, top_k: int, bytes_num: int):
     pq = PriorityQueue()
     for i, vector in enumerate(flat_vectors):
         dist = hamming_dist(vector, query, bytes_num)
-        pq.push(dist, (i, "a"))
+        pq.push(dist, (i, "x"))
 
     result = []
     for i in range(top_k):
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         for qid in range(query_size):
             # query_data = np.random.randint(1, 255, bytes_num, dtype=np.uint8).tobytes()
             query_data = flat_vectors[qid]
-            #f_r = [(r[0], r[1]) for r in brute_force_query(flat_vectors, query_data, 10, bytes_num)]
+            # f_r = [(r[0], r[1]) for r in brute_force_query(flat_vectors, query_data, 10, bytes_num)]
             # hnsw.query(query_data, 10)
             h_r = [(r['id'], int(r['distance'])) for r in hnsw.query(query_data, 10)]
             #print(f_r)
@@ -75,3 +75,4 @@ if __name__ == '__main__':
         build_qps = data_size / build_t_avg
         query_qps = query_size / query_t_avg
         print(f'{total_size}\t{build_qps}\t{build_t_avg}\t{query_qps}\t{query_t_avg}')
+        break
