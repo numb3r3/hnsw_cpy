@@ -70,6 +70,7 @@ cdef void heappq_push(heappq* pq, float priority, value_t value):
             new_min_node = 0
             new_max_node = 0
             new_node.parent = start_node
+            new_node.child = start_node.child
             start_node.child = new_node
             break
 
@@ -91,22 +92,11 @@ cdef pq_entity* heappq_pop_min(heappq* pq):
     cdef pq_node* right_node = result_node.right
 
     if child_node != NULL:
+        if child_node.child != NULL:
+            child_node.child.parent = pq.min_node
 
-        if pq.min_node == pq.max_node:
-            pq.max_node = child_node
-
-        pq.min_node = child_node
-
-        if right_node != NULL:
-            child_node.right = right_node
-            right_node.parent = child_node
-
-        if parent_node != NULL:
-            child_node.parent = parent_node
-            parent_node.left = child_node
-        else:
-           child_node.parent = NULL
-           pq.root = child_node
+        result_node = child_node
+        pq.min_node.child = result_node.child
 
     elif right_node == NULL:
         if parent_node != NULL:
@@ -155,23 +145,11 @@ cdef pq_entity* heappq_pop_max(heappq* pq):
     cdef pq_node* left_node = result_node.left
 
     if child_node != NULL:
+        if child_node.child != NULL:
+            child_node.child.parent = pq.max_node
+        result_node = child_node
+        pq.max_node.child = result_node.child
 
-
-        if pq.min_node == pq.max_node:
-            pq.min_node = child_node
-
-        pq.max_node = child_node
-
-        if left_node != NULL:
-            child_node.left = left_node
-            left_node.parent = child_node
-
-        if parent_node != NULL:
-            child_node.parent = parent_node
-            parent_node.right = child_node
-        else:
-            child_node.parent = NULL
-            pq.root = child_node
 
     elif left_node == NULL:
         if parent_node != NULL:

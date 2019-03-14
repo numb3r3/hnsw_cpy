@@ -65,7 +65,7 @@ if __name__ == '__main__':
             # f_r = [(r[0], r[1]) for r in brute_force_query(flat_vectors, query_data, 10, bytes_num)]
             # hnsw.query(query_data, 10)
             h_r = [(r['id'], int(r['distance'])) for r in hnsw.query(query_data, 10)]
-            #print(f_r)
+            # print(f_r)
             print(h_r)
             _query_time_cost.append(time.perf_counter() - query_start_t)
         query_time_cost.append(np.mean(_query_time_cost))
@@ -75,4 +75,4 @@ if __name__ == '__main__':
         build_qps = data_size / build_t_avg
         query_qps = query_size / query_t_avg
         print(f'{total_size}\t{build_qps}\t{build_t_avg}\t{query_qps}\t{query_t_avg}')
-        break
+        # break
