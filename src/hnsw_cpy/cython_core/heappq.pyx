@@ -14,19 +14,21 @@ cdef heappq* init_heappq():
 cdef void free_heappq(heappq* pq):
     cdef unsigned int i = 0
     cdef pq_entity* e
+
     while pq.size > 0:
         if i % 2 == 0:
             e = heappq_pop_max(pq)
         else:
             e = heappq_pop_min(pq)
         e.value = NULL
-        PyMem_Free(e)
+        # PyMem_Free(e)
         i += 1
 
     PyMem_Free(pq)
 
 cdef void heappq_push(heappq* pq, float priority, value_t value):
     cdef pq_entity* entity = <pq_entity*> PyMem_Malloc(sizeof(pq_entity))
+
     entity.value = value
     entity.priority = priority
 

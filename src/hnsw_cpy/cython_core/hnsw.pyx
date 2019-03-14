@@ -190,6 +190,7 @@ cdef class IndexHnsw:
                 pq_e = heappq_pop_max(selected_pq)
                 dist = pq_e.priority
                 neighbor = <hnswNode*> pq_e.value
+                pq_e.value = NULL
                 PyMem_Free(pq_e)
 
                 entry_ptr = neighbor
@@ -240,6 +241,7 @@ cdef class IndexHnsw:
             pq_e = heappq_pop_min(candidates_pq)
             priority = pq_e.priority
             candidate = <hnswNode*> pq_e.value
+            pq_e.value = NULL
             PyMem_Free(pq_e)
 
             lower_bound = heappq_peak_max(result_pq).priority
@@ -267,7 +269,9 @@ cdef class IndexHnsw:
 
                     if result_pq.size > ef:
                         _e = heappq_pop_max(result_pq)
+                        _e.value = NULL
                         PyMem_Free(_e)
+
                 # elif dist == lower_bound:
                 #    heappq_push(candidates_pq, dist, neighbor)
 
@@ -277,8 +281,6 @@ cdef class IndexHnsw:
 
         free_heappq(candidates_pq)
         candidates_pq = NULL
-        #if result_pq.size < ef:
-        #    print('search size: ' + str(result_pq.size) + ' / ef: ' + str(ef))
 
         return result_pq
 
@@ -349,6 +351,7 @@ cdef class IndexHnsw:
                 pq_e = heappq_pop_min(neighbors_pq)
                 priority = pq_e.priority
                 candidate = <hnswNode*> pq_e.value
+                pq_e.value = NULL
                 PyMem_Free(pq_e)
 
                 if candidate.id in visited_nodes:
@@ -376,12 +379,16 @@ cdef class IndexHnsw:
         else:
             while neighbors_pq.size > 0 and result_pq.size < ensure_k:
                 pq_e = heappq_pop_min(neighbors_pq)
-                heappq_push(result_pq, pq_e.priority, pq_e.value)
+                candidate = <hnswNode*> pq_e.value
+                priority = pq_e.priority
+                heappq_push(result_pq, priority, candidate)
+                pq_e.value = NULL
                 PyMem_Free(pq_e)
 
 
         while result_pq.size > ensure_k:
             pq_e = heappq_pop_max(result_pq)
+            pq_e.value = NULL
             PyMem_Free(pq_e)
 
         visited_nodes.clear()
@@ -414,6 +421,7 @@ cdef class IndexHnsw:
             pq_e = heappq_pop_min(selected_pq)
             dist = pq_e.priority
             neighbor = <hnswNode*> pq_e.value
+            pq_e.value = NULL
             PyMem_Free(pq_e)
             _add_edge(node, neighbor, dist, level)
 
@@ -452,6 +460,7 @@ cdef class IndexHnsw:
             pq_e = heappq_pop_min(neighbors_pq)
             dist = pq_e.priority
             next_node = <hnswNode*> pq_e.value
+            pq_e.value = NULL
             PyMem_Free(pq_e)
             while next_node != NULL:
                 if count >= top_k:
