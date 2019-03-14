@@ -88,14 +88,14 @@ class HnswIndex:
         :type model_path: str
         :param model_path: the file path where the index's model will be dumped
         """
-        self._save_model(model_path)
+        self.indexer.save_model(model_path)
 
     def load_model(self, model_path):
         """load the index from the model file
         :type model_path: str
         :param model_path: the model's file path
         """
-        self._load_model(model_path)
+        self.indexer.load_model(model_path)
 
     def clear(self):
         """ remove all elements from the index

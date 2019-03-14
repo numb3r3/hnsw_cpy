@@ -82,7 +82,7 @@ cdef bytes _c2bytes(BVECTOR data, USHORT datalen):
      return retval
 
 cpdef USHORT hamming_dist(BVECTOR x, BVECTOR y, USHORT datalen):
-    cdef USHORT i, dist
+    cdef USHORT i, dist = 0
     cdef UCHAR byte_x, byte_y, byte_z
 
     for i in range(datalen):
@@ -92,7 +92,6 @@ cpdef USHORT hamming_dist(BVECTOR x, BVECTOR y, USHORT datalen):
 
         if byte_z > 0:
             dist += 1
-
     return dist
 
 
@@ -445,6 +444,7 @@ cdef class IndexHnsw:
             PyMem_Free(result_item)
 
             l -= 1
+
 
         cdef UINT ef = max(self.config.ef, top_k)
         cdef heappq* neighbors_pq = self.search_level(query, entry_ptr, ef, 0)

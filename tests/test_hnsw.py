@@ -29,6 +29,10 @@ class TestHnswIndex(unittest.TestCase):
 
         self.hnsw_toy.bulk_index(range(8), self.toy_data['data'])
 
+    def test_load_dump(self):
+        self.hnsw_toy.save_model("data")
+
+
 
     def test_add_data(self):
         self.assertEqual(self.hnsw_toy.bytes_num, self.toy_data['bytes'])
@@ -37,6 +41,7 @@ class TestHnswIndex(unittest.TestCase):
     def test_query(self):
         for query, expect in zip(self.toy_data['query'], self.toy_data['expect']):
             result = self.hnsw_toy.query(query, 10)
+
             for i in range(len(expect)):
                 self.assertEqual(result[i]['distance'], 0)
 
