@@ -179,6 +179,7 @@ cdef class IndexHnsw:
             pq_e = heappq_peak_min(selected_pq)
             if pq_e.priority == 0:
                 neighbor = <hnswNode*> pq_e.value
+                new_node.next = neighbor.next
                 neighbor.next = new_node
                 level = neighbor.level
                 free_heappq(selected_pq)
