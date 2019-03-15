@@ -58,6 +58,8 @@ cdef void _add_edge(hnswNode* f, hnswNode* t, DIST dist, UINT level):
 
 cdef void _empty_edge_set(hnswNode* node, USHORT level):
     cdef hnsw_edge_set* edge_set = node.edges[level]
+    if edge_set.size == 0:
+        return
     cdef hnsw_edge* head_edge = edge_set.head_ptr
     while head_edge != NULL:
         head_edge.node = NULL
