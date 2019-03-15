@@ -45,6 +45,9 @@ cdef queue_value queue_pop_head(queue* q_ptr):
     else:
         q_ptr.head.prev = NULL
 
+
+    entry.data = NULL
+    entry.next = NULL
     PyMem_Free(entry)
 
     return result
@@ -86,6 +89,8 @@ cdef queue_value queue_pop_tail(queue* q_ptr):
     else:
         q_ptr.tail.next = NULL
 
+    entry.data = NULL
+    entry.prev = NULL
     PyMem_Free(entry)
     return result
 
