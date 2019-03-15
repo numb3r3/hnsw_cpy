@@ -176,14 +176,14 @@ cdef class IndexHnsw:
             selected_pq = self._select_neighbors(vector, neighbors_pq, self.config.m, l, True)
             free_heappq(neighbors_pq)
 
-            pq_e = heappq_peak_min(selected_pq)
-            if pq_e.priority == 0:
-                neighbor = <hnswNode*> pq_e.value
-                new_node.next = neighbor.next
-                neighbor.next = new_node
-                level = neighbor.level
-                free_heappq(selected_pq)
-                break
+            #pq_e = heappq_peak_min(selected_pq)
+            #if pq_e.priority == 0:
+            #    neighbor = <hnswNode*> pq_e.value
+            #    new_node.next = neighbor.next
+            #    neighbor.next = new_node
+            #    level = neighbor.level
+            #    free_heappq(selected_pq)
+            #    break
 
             while selected_pq.size > 0:
                 pq_e = heappq_pop_max(selected_pq)
