@@ -24,7 +24,7 @@ class HnswIndex:
         """
         self.logger = set_logger('HnswIndex', verbose)
         self.bytes_num = bytes_num
-        self.indexer = IndexHnsw(bytes_num)
+        self.indexer = IndexHnsw(bytes_num, **kwargs)
 
 
     def _get_size(self, data):
