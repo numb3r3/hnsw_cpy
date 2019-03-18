@@ -2,11 +2,10 @@
 
 # noinspection PyUnresolvedReferences
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
-from cpython.bytes cimport PyBytes_FromStringAndSize
 from cpython cimport array
 
 from libc.stdlib cimport rand, RAND_MAX
-from libc.string cimport memcpy, strcpy
+from libc.string cimport memcpy
 from libc.math cimport log, floor, abs
 
 from hnsw_cpy.cython_core.heappq cimport heappq, pq_entity, init_heappq, free_heappq, heappq_push, heappq_pop_min, heappq_peak_min, heappq_pop_max, heappq_peak_max
@@ -18,7 +17,7 @@ cdef hnswNode* create_node(UIDX id, USHORT level, BVECTOR vector, USHORT bytes_n
      node.id = id
      node.level = level
      node.next = NULL
-     cdef USHORT N = bytes_num * sizeof(UCHAR) + 1 # +1 for the null-terminator
+     cdef USHORT N = bytes_num * sizeof(UCHAR)
 
      node.vector = <BVECTOR> PyMem_Malloc(N)
      memcpy(node.vector, vector, N)
@@ -64,24 +63,12 @@ cdef void _empty_edge_set(hnswNode* node, USHORT level):
     while head_edge != NULL:
         head_edge.node = NULL
         edge_set.head_ptr = head_edge.next
+        head_edge.next = NULL
         PyMem_Free(head_edge)
         head_edge = edge_set.head_ptr
     edge_set.size = 0
     edge_set.head_ptr = NULL
     edge_set.last_ptr = NULL
-
-cdef bytes _c2bytes(BVECTOR data, USHORT datalen):
-     cdef bytes retval = PyBytes_FromStringAndSize(NULL, datalen*8)
-
-     cdef char* resbuf = retval # no copy
-     cdef unsigned char byte
-     cdef unsigned short pos, i
-     cdef char* s01 = "01"
-     for i in range(datalen):
-         byte = data[i]
-         for pos in range(8):
-             resbuf[8*i + (7-pos)] = s01[(byte >> pos) & 1]
-     return retval
 
 cpdef USHORT hamming_dist(BVECTOR x, BVECTOR y, USHORT datalen):
     cdef USHORT i, dist = 0
