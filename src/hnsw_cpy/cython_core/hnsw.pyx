@@ -23,6 +23,7 @@ cdef hnswNode* create_node(UIDX id, USHORT level, BVECTOR vector, USHORT bytes_n
      node.id = id
      node.level = level
      node.next = NULL
+     node.in_degree = 0
      cdef USHORT N = bytes_num * sizeof(UCHAR)
 
      node.vector = <BVECTOR> PyMem_Malloc(N)
@@ -39,8 +40,6 @@ cdef hnswNode* create_node(UIDX id, USHORT level, BVECTOR vector, USHORT bytes_n
          edge_set.last_ptr = NULL
 
          node.edges[l] = edge_set
-
-     # PyMem_Free(vector)
 
      return node
 
@@ -59,22 +58,29 @@ cdef void _add_edge(hnswNode* f, hnswNode* t, DIST dist, UINT level):
         edge_set.last_ptr = edge
 
     edge_set.size += 1
+    t.in_degree += 1
 
 
-cdef void _empty_edge_set(hnswNode* node, USHORT level):
+cdef queue* _empty_edge_set(hnswNode* node, USHORT level, bint check_island):
+    cdef queue* island_nodes = init_queue()
+
     cdef hnsw_edge_set* edge_set = node.edges[level]
-    if edge_set.size == 0:
-        return
     cdef hnsw_edge* head_edge = edge_set.head_ptr
     while head_edge != NULL:
-        head_edge.node = NULL
+        if check_island:
+            head_edge.node.in_degree -= 1
+            queue_push_tail(island_nodes, head_edge.node)
+
+
         edge_set.head_ptr = head_edge.next
         head_edge.next = NULL
         PyMem_Free(head_edge)
         head_edge = edge_set.head_ptr
+
     edge_set.size = 0
     edge_set.head_ptr = NULL
     edge_set.last_ptr = NULL
+    return island_nodes
 
 cpdef USHORT hamming_dist(BVECTOR x, BVECTOR y, USHORT datalen):
     cdef USHORT i, dist = 0
@@ -95,10 +101,13 @@ cdef void _free_node(hnswNode* node):
     cdef hnswNode* cur_node
     cdef USHORT level
     cdef USHORT l
+    cdef queue* neighbors
     while next_node != NULL:
         level = next_node.level
         for l in range(level+1):
-            _empty_edge_set(next_node, l)
+            neighbors = _empty_edge_set(next_node, l, False)
+            queue_free(neighbors)
+
             PyMem_Free(next_node.edges[l])
             next_node.edges[l] = NULL
 
@@ -411,7 +420,7 @@ cdef class IndexHnsw:
         selected_pq = self._select_neighbors(node.vector, neighbors_pq, k, level, True)
         free_heappq(neighbors_pq)
 
-        _empty_edge_set(node, level)
+        cdef queue* island_nodes = _empty_edge_set(node, level, True)
         cdef pq_entity* pq_e
         while selected_pq.size > 0:
             pq_e = heappq_pop_min(selected_pq)
@@ -422,6 +431,51 @@ cdef class IndexHnsw:
             _add_edge(node, neighbor, dist, level)
 
         free_heappq(selected_pq)
+        neighbors_pq = NULL
+        selected_pq = NULL
+
+        cdef hnswNode* island
+        cdef hnswNode* island_neighbor
+        cdef hnsw_edge* result_item
+        cdef hnswNode* entry_ptr
+        cdef heappq* island_neighbors
+        cdef heappq* island_selected
+        cdef DIST min_dist
+        cdef USHORT l
+
+        while not queue_is_empty(island_nodes):
+            island = <hnswNode*> queue_pop_head(island_nodes)
+            if island.in_degree > 3:
+                continue
+
+            entry_ptr = self.entry_ptr
+            l = self.max_level
+
+            min_dist = hamming_dist(island.vector, entry_ptr.vector, self.bytes_num)
+
+            # add new incoming edges
+            while l > level:
+                result_item = self.greedy_closest_neighbor(island.vector, entry_ptr, min_dist, l)
+                min_dist = result_item.dist
+                entry_ptr = result_item.node
+                PyMem_Free(result_item)
+
+                l -= 1
+
+            island_neighbors = self.search_level(island.vector, entry_ptr, self.config.ef_construction, level)
+            island_selected = self._select_neighbors(island.vector, island_neighbors, self.config.m, level, True)
+            free_heappq(island_neighbors)
+
+            while island_selected.size > 0:
+                pq_e = heappq_pop_max(island_selected)
+                dist = pq_e.priority
+                island_neighbor = <hnswNode*> pq_e.value
+                pq_e.value = NULL
+                PyMem_Free(pq_e)
+                _add_edge(island_neighbor, island, dist, level)
+            free_heappq(island_selected)
+
+        queue_free(island_nodes)
 
     cdef USHORT _random_level(self):
         cdef double r = rand() / RAND_MAX
@@ -676,6 +730,7 @@ cdef class IndexHnsw:
         while not queue_is_empty(nodes_queue):
             node_ptr = <hnswNode*> queue_pop_head(nodes_queue)
             _free_node(node_ptr)
+
         queue_free(nodes_queue)
 
         PyMem_Free(self.config)

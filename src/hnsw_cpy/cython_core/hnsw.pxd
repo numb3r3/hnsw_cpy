@@ -23,6 +23,7 @@ cdef struct hnswNode:
     USHORT level
     hnsw_edge_set** edges
     hnswNode* next
+    USHORT in_degree
 
 
 cdef struct hnswConfig:

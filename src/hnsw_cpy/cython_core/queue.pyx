@@ -15,6 +15,7 @@ cdef void queue_free(queue* q_ptr):
 
     PyMem_Free(q_ptr)
 
+
 cdef void queue_push_head(queue* q_ptr, queue_value data):
     cdef queue_entry* entry = <queue_entry*> PyMem_Malloc(sizeof(queue_entry))
     entry.data = data
