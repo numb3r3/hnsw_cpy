@@ -30,8 +30,9 @@ class TestHnswIndex(unittest.TestCase):
         self.hnsw_toy.bulk_index(range(8), self.toy_data['data'])
 
     def test_load_dump(self):
-        self.hnsw_toy.save_model("data")
+        self.hnsw_toy.dump("data")
 
+        hnsw_toy1 = HnswIndex.load("data")
 
 
     def test_add_data(self):

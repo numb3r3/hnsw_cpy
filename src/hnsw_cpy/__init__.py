@@ -62,7 +62,6 @@ class HnswIndex:
         return self.indexer.query(query, top_k)
 
 
-
     @property
     def size(self):
         return self.indexer.size
@@ -73,7 +72,7 @@ class HnswIndex:
         :rtype: Tuple[int, int]
         :return: a tuple of (number of elements, number of bytes per vector) of the index
         """
-        return self.indexer.size, self.bytes_per_vector
+        return self.indexer.total_size, self.bytes_num
 
     @property
     def memory_size(self):
@@ -82,20 +81,19 @@ class HnswIndex:
         """
         return self.indexer.memory_size
 
-    def save_model(self, model_path):
+    def dump(self, model_path):
         """save the index's model
 
         :type model_path: str
         :param model_path: the file path where the index's model will be dumped
         """
-        self.indexer.save_model(model_path)
+        self.indexer.dump(model_path)
 
-    def load_model(self, model_path):
-        """load the index from the model file
-        :type model_path: str
-        :param model_path: the model's file path
-        """
-        self.indexer.load_model(model_path)
+    @staticmethod
+    def load(model_path):
+        hnsw = HnswIndex(bytes_num=0)
+        hnsw.indexer.load(model_path)
+        return hnsw
 
     def clear(self):
         """ remove all elements from the index

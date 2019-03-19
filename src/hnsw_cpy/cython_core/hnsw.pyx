@@ -1,8 +1,13 @@
 # cython: language_level=3, wraparound=False, boundscheck=False
 
 # noinspection PyUnresolvedReferences
+import os
+import struct
+
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 from cpython cimport array
+from cpython.bytes cimport PyBytes_FromStringAndSize
+
 
 from libc.stdlib cimport rand, RAND_MAX
 from libc.string cimport memcpy
@@ -10,6 +15,7 @@ from libc.math cimport log, floor, abs
 
 from hnsw_cpy.cython_core.heappq cimport heappq, pq_entity, init_heappq, free_heappq, heappq_push, heappq_pop_min, heappq_peak_min, heappq_pop_max, heappq_peak_max
 from hnsw_cpy.cython_core.queue cimport queue, init_queue, queue_push_tail, queue_pop_head, queue_free, queue_is_empty
+from hnsw_cpy.cython_core.prehash cimport prehash_map, init_prehash_map, prehash_insert, prehash_get, prehash_free
 
 
 cdef hnswNode* create_node(UIDX id, USHORT level, BVECTOR vector, USHORT bytes_num):
@@ -529,12 +535,138 @@ cdef class IndexHnsw:
 
         return nodes_queue
 
-    cpdef void save_model(self, model_path):
-        pass
+    cpdef void dump(self, model_path):
+        bf_m = open(os.path.join(model_path, 'graph.meta'), 'wb')
+        bf_e = open(os.path.join(model_path, 'graph.edges'), 'wb')
+
+        # dump hnsw config struct
+        bd = struct.pack("IHHIiiiiif", self.total_size, self.bytes_num, self.max_level, self.entry_ptr.id, self.config.ef, self.config.ef_construction, self.config.m, self.config.m_max, self.config.m_max_0, self.config.level_multiplier)
+        bf_m.write(bd)
+
+        cdef queue* nodes_queue = self._get_nodes()
+        cdef hnsw_edge_set* edge_set
+        cdef hnsw_edge* next_edge
+        cdef int l = 0
+        cdef UIDX node_id
+        cdef DIST dist
+        while not queue_is_empty(nodes_queue):
+            node_ptr = <hnswNode*> queue_pop_head(nodes_queue)
+            bd = struct.pack("IH", node_ptr.id, node_ptr.level)
+
+            bf_m.write(bd + PyBytes_FromStringAndSize(<char*> node_ptr.vector, self.bytes_num))
+            bf_e.write(bd)
+
+            l = node_ptr.level
+
+            edges_bytes = b''
+            edges_data_size = 0
+            while l >= 0:
+                edge_set = node_ptr.edges[l]
+
+                level_edges_bytes = struct.pack('HH', l, edge_set.size)
+
+                next_edge = edge_set.head_ptr
+                while next_edge != NULL:
+                    node_id = next_edge.node.id
+                    dist = next_edge.dist
+                    bd = struct.pack('If', node_id, dist)
+                    level_edges_bytes += bd
+
+                    next_edge = next_edge.next
+
+                level_edge_data_size = 2*sizeof(USHORT) + edge_set.size*(sizeof(UIDX) + sizeof(float))
+
+                edges_bytes += level_edges_bytes
+                edges_data_size += level_edge_data_size
+
+                l -= 1
+
+            edges_bytes = struct.pack('H', edges_data_size) + edges_bytes
+
+            bf_e.write(edges_bytes)
+
+        bf_m.close()
+        bf_e.close()
+
+    cpdef void load(self, model_path):
+
+        bf_m = open(os.path.join(model_path, 'graph.meta'), 'rb')
+
+        graph_meta_size = 2*sizeof(UIDX) + 2*sizeof(USHORT) + 5*sizeof(int) + sizeof(float)
+
+        # load hnsw config struct
+        binary_data = bf_m.read(graph_meta_size)
+        tuple_of_data = struct.unpack("IHHIiiiiif", binary_data)
+
+        total_size = tuple_of_data[0]
+        bytes_num = tuple_of_data[1]
+        max_level = tuple_of_data[2]
+        entry_id = tuple_of_data[3]
+
+        self.total_size = total_size
+        self.bytes_num = bytes_num
+        self.max_level = max_level
+
+        self.config.ef = tuple_of_data[4]
+        self.config.ef_construction = tuple_of_data[5]
+        self.config.m = tuple_of_data[6]
+        self.config.m_max = tuple_of_data[7]
+        self.config.m_max_0 = tuple_of_data[8]
+        self.config.level_multiplier = tuple_of_data[9]
+
+        node_meta_size = sizeof(UIDX) + sizeof(USHORT)
+        node_size = node_meta_size + self.bytes_num*sizeof(UCHAR)
+        cdef int count = 0
+        cdef hnswNode* node_ptr
+        cdef prehash_map* nodes_map = init_prehash_map()
+        while count < total_size:
+            bd = bf_m.read(node_size)
+            id, level = struct.unpack("IH", bd[:node_meta_size])
+
+            vector = bd[node_meta_size:]
+            node_ptr = create_node(id, level, vector, self.bytes_num)
+            prehash_insert(nodes_map, id, node_ptr)
+
+            count += 1
+        bf_m.close()
+
+        self.entry_ptr = <hnswNode*> prehash_get(nodes_map, entry_id)
 
 
-    cpdef void load_model(self, model_path):
-        pass
+        # load graph edges
+        bf_e = open(os.path.join(model_path, 'graph.edges'), 'rb')
+
+        count = 0
+        cdef hnswNode* neighbor_ptr
+
+        while count < total_size:
+            bd = bf_e.read(sizeof(UIDX) + sizeof(USHORT))
+            id, level = struct.unpack('IH', bd)
+            node_ptr = <hnswNode*> prehash_get(nodes_map, id)
+
+            bd = bf_e.read(sizeof(USHORT))
+            data_len = struct.unpack('H', bd)[0]
+
+            node_edges_data = bf_e.read(data_len)
+            _start_pos = 0
+
+            while level >= 0:
+                _l, _size = struct.unpack('HH', node_edges_data[_start_pos:_start_pos+2*sizeof(USHORT)])
+                _start_pos += 2*sizeof(USHORT)
+                while _size > 0:
+                    nid, dist = struct.unpack('If', node_edges_data[_start_pos:_start_pos+sizeof(UIDX) + sizeof(float)])
+                    neighbor_ptr = <hnswNode*> prehash_get(nodes_map, nid)
+                    _add_edge(node_ptr, neighbor_ptr, dist, _l)
+                    _start_pos += sizeof(UIDX) + sizeof(float)
+                    _size -= 1
+
+                level -= 1
+
+            count += 1
+
+
+        prehash_free(nodes_map)
+        bf_e.close()
 
     cdef void free_hnsw(self):
         cdef queue* nodes_queue = self._get_nodes()
