@@ -549,6 +549,7 @@ cdef class IndexHnsw:
         cdef int l = 0
         cdef UIDX node_id
         cdef DIST dist
+
         while not queue_is_empty(nodes_queue):
             node_ptr = <hnswNode*> queue_pop_head(nodes_queue)
             bd = struct.pack("IH", node_ptr.id, node_ptr.level)
@@ -585,6 +586,7 @@ cdef class IndexHnsw:
 
             bf_e.write(edges_bytes)
 
+        queue_free(nodes_queue)
         bf_m.close()
         bf_e.close()
 
@@ -616,13 +618,14 @@ cdef class IndexHnsw:
 
         node_meta_size = sizeof(UIDX) + sizeof(USHORT)
         node_size = node_meta_size + self.bytes_num*sizeof(UCHAR)
+
         cdef int count = 0
         cdef hnswNode* node_ptr
         cdef prehash_map* nodes_map = init_prehash_map()
+
         while count < total_size:
             bd = bf_m.read(node_size)
             id, level = struct.unpack("IH", bd[:node_meta_size])
-
             vector = bd[node_meta_size:]
             node_ptr = create_node(id, level, vector, self.bytes_num)
             prehash_insert(nodes_map, id, node_ptr)
@@ -664,9 +667,9 @@ cdef class IndexHnsw:
 
             count += 1
 
-
         prehash_free(nodes_map)
         bf_e.close()
+
 
     cdef void free_hnsw(self):
         cdef queue* nodes_queue = self._get_nodes()
@@ -686,6 +689,10 @@ cdef class IndexHnsw:
     @property
     def size(self):
         return self.total_size
+
+    @property
+    def num_bytes(self):
+        return self.bytes_num
 
     @property
     def memory_size(self):
@@ -722,6 +729,7 @@ cdef class IndexHnsw:
 
         self.entry_ptr = NULL
         self.max_level = 0
+        self.total_size = 0
 
     def __dealloc__(self):
         self.free_hnsw()

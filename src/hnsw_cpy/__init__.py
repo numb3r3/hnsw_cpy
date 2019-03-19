@@ -72,7 +72,7 @@ class HnswIndex:
         :rtype: Tuple[int, int]
         :return: a tuple of (number of elements, number of bytes per vector) of the index
         """
-        return self.indexer.total_size, self.bytes_num
+        return self.indexer.size, self.bytes_num
 
     @property
     def memory_size(self):
@@ -93,9 +93,13 @@ class HnswIndex:
     def load(model_path):
         hnsw = HnswIndex(bytes_num=0)
         hnsw.indexer.load(model_path)
+        hnsw.bytes_num = hnsw.indexer.num_bytes
+
         return hnsw
 
     def clear(self):
         """ remove all elements from the index
         """
         self.indexer.destroy()
+        self.indexer = None
+        self.bytes_num = 0
