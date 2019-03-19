@@ -190,7 +190,7 @@ cdef class IndexHnsw:
                 if l == 0:
                     m_max = self.config.m_max_0
                 if neighbor.edges[l].size > m_max:
-                    self._prune_neighbors(neighbor, m_max, l)
+                    self._prune_neighbors(neighbor, self.config.m, l)
 
 
 
@@ -220,7 +220,6 @@ cdef class IndexHnsw:
 
         cdef hnsw_edge* next_edge
         cdef hnsw_edge_set* edge_set
-        cdef UIDX id
 
         cdef pq_entity* pq_e
         cdef pq_entity* _e
@@ -260,8 +259,9 @@ cdef class IndexHnsw:
                         _e.value = NULL
                         PyMem_Free(_e)
 
+                # TODO: uncomment the following codes to enlarge search space
                 # elif dist == lower_bound:
-                #    heappq_push(candidates_pq, dist, neighbor)
+                #     heappq_push(candidates_pq, dist, neighbor)
 
                 next_edge = next_edge.next
 
@@ -367,11 +367,13 @@ cdef class IndexHnsw:
         else:
             while neighbors_pq.size > 0 and result_pq.size < ensure_k:
                 pq_e = heappq_pop_min(neighbors_pq)
-                candidate = <hnswNode*> pq_e.value
                 priority = pq_e.priority
-                heappq_push(result_pq, priority, candidate)
+                candidate = <hnswNode*> pq_e.value
                 pq_e.value = NULL
                 PyMem_Free(pq_e)
+
+                heappq_push(result_pq, priority, candidate)
+
 
 
         while result_pq.size > ensure_k:
@@ -574,7 +576,7 @@ cdef class IndexHnsw:
             self.config.level_multiplier = 1.0 / log(1.0*self.config.m)
 
         if self.config.m_max == -1:
-            self.config.m_max = self.config.m
+            self.config.m_max = int(self.config.m * 1.5)
 
         if self.config.m_max_0 == -1:
             self.config.m_max_0 = 2 * self.config.m
