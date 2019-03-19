@@ -1,3 +1,4 @@
+import sys
 import time
 
 import numpy as np
@@ -6,6 +7,8 @@ from hnsw_cpy.cython_core.heappq import PriorityQueue
 from hnsw_cpy.cython_core.hnsw import hamming_dist
 
 from tqdm import tqdm
+from collections import defaultdict
+
 
 def toy_data_generator(size, bytes_num):
     return np.random.randint(0, 255, [size, bytes_num], dtype=np.uint8)
@@ -35,8 +38,8 @@ if __name__ == '__main__':
     #max_iter = 5
     #num_repeat = 3
     top_k = 10
-    data_size = 10000
-    query_size = 1000
+    # data_size = 10000
+    query_size = 250
     total_size = 0
 
     print(f'Benchmarking for HNSW indexer')
@@ -46,7 +49,7 @@ if __name__ == '__main__':
     query_time_cost = []
 
     hnsw = HnswIndex(bytes_num, m=20, ef_construction=250)
-    doc_vectors = from_file('data/code.100w.bin', bytes_num)
+    doc_vectors = from_file(sys.argv[1], bytes_num)
     data_size = doc_vectors.shape[0]
     doc_ids = np.array(list(range(data_size)))
 
@@ -64,16 +67,38 @@ if __name__ == '__main__':
     query_start_t = time.perf_counter()
     recalls = []
     for qid in range(query_size):
-            # query_data = np.random.randint(1, 255, bytes_num, dtype=np.uint8).tobytes()
+        # query_data = np.random.randint(1, 255, bytes_num, dtype=np.uint8).tobytes()
         query_data = doc_vectors[data_size-query_size+qid,:].tobytes()
 
         h_r = [(r['id'], int(r['distance'])) for r in hnsw.query(query_data, top_k)]
         b_r = bt_result[qid]
+
+        # h_count = defaultdict(int)
+        b_count = defaultdict(int)
+        max_count = 0
+        for r in b_r:
+            d = int(r[1])
+            if d > max_count:
+                max_count = d
+            b_count[d] += 1
+
+        c = 0
+        m_count = 0
+        for r in h_r:
+            d = int(r[1])
+            if d == max_count:
+                m_count += 1
+                continue
+
+            if b_count.get(d, 0) > 0:
+                c += 1
+                b_count[d] -= 1
+
+        c += m_count
+
         print(h_r)
         print(b_r)
-        s = set([r[0] for r in h_r])
-        b = set([r[0] for r in b_r])
-        c = len(s.intersection(b))
+
         print(c)
         recalls.append(c / top_k)
         print()
