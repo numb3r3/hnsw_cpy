@@ -1,8 +1,6 @@
 import os
 from setuptools import setup, find_packages
 from setuptools.extension import Extension
-from Cython.Build import cythonize
-
 
 root = os.path.abspath(os.path.dirname(__file__))
 
@@ -43,7 +41,7 @@ setup(
         'setuptools>=18.0',
         'cython',
     ],
-    ext_modules=cythonize(extensions),
+    ext_modules=extensions,
     install_requires=[
         'termcolor>=1.1',
     ],
