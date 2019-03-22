@@ -64,14 +64,15 @@ cdef void _add_edge(hnswNode* f, hnswNode* t, DIST dist, UINT level):
 
 cdef queue* _empty_edge_set(hnswNode* node, USHORT level, bint check_island):
     cdef queue* island_nodes = init_queue()
-
     cdef hnsw_edge_set* edge_set = node.edges[level]
     cdef hnsw_edge* head_edge = edge_set.head_ptr
+
     while head_edge != NULL:
         if check_island:
             queue_push_tail(island_nodes, head_edge.node)
-
-        head_edge.node.in_degree -= 1
+            # WIP: must under the condition: check_island = True
+            # WIP: DONT MODIFY THIS CODE LINE
+            head_edge.node.in_degree -= 1
 
         edge_set.head_ptr = head_edge.next
         head_edge.next = NULL
@@ -100,32 +101,11 @@ cpdef USHORT hamming_dist(BVECTOR x, BVECTOR y, USHORT datalen):
 cdef void _free_node(hnswNode* node):
     #cdef hnswNode* next_node = node.next
     #cdef hnswNode* cur_node
-    cdef USHORT level, low_level
+    cdef USHORT level = node.level
+    cdef USHORT low_level = node.low_level
     cdef USHORT l
     cdef queue* neighbors
 
-    '''
-    while next_node != NULL:
-        low_level = next_node.low_level
-        level = next_node.level
-        for l in range(low_level, level+1):
-            neighbors = _empty_edge_set(next_node, l, False)
-            queue_free(neighbors)
-
-            PyMem_Free(next_node.edges[l])
-            next_node.edges[l] = NULL
-
-        PyMem_Free(next_node.edges)
-        next_node.edges = NULL
-        PyMem_Free(next_node.vector)
-        next_node.vector = NULL
-        cur_node = next_node
-        next_node = next_node.next
-        PyMem_Free(cur_node)
-    '''
-
-    level = node.level
-    low_level = node.low_level
     for l in range(low_level, level+1):
         neighbors = _empty_edge_set(node, l, False)
         queue_free(neighbors)
@@ -137,6 +117,7 @@ cdef void _free_node(hnswNode* node):
     node.edges = NULL
     PyMem_Free(node.vector)
     node.vector = NULL
+    node.next = NULL
     PyMem_Free(node)
 
 cdef class IndexHnsw:
@@ -674,7 +655,6 @@ cdef class IndexHnsw:
 
             for l in range(node_ptr.low_level, node_ptr.level+1):
 
-            #while l >= node_ptr.low_level:
                 edge_set = node_ptr.edges[l]
 
                 level_edges_bytes = struct.pack('HH', l, edge_set.size)
@@ -787,8 +767,6 @@ cdef class IndexHnsw:
             count += 1
         bf_e.close()
 
-        print('#3333')
-
         # load inverted nodes
         cdef hnswNode* prev_node
         cdef hnswNode* next_node = NULL
@@ -815,10 +793,7 @@ cdef class IndexHnsw:
             bd = bf_inv.read(sizeof(USHORT))
         bf_inv.close()
 
-        print('#444')
-
         prehash_free(nodes_map)
-        print('#555')
 
 
     cdef void free_hnsw(self):
@@ -826,6 +801,7 @@ cdef class IndexHnsw:
         while not queue_is_empty(nodes_queue):
             node_ptr = <hnswNode*> queue_pop_head(nodes_queue)
             _free_node(node_ptr)
+
         queue_free(nodes_queue)
         PyMem_Free(self.config)
         self.config = NULL
