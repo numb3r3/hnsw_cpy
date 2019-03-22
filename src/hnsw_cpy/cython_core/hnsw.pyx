@@ -655,7 +655,7 @@ cdef class IndexHnsw:
                 _inv_data = b''
                 _count = 0
                 while next_node != NULL:
-                    inv_bd = struct_pack('II', prev_node.id, next_node.id)
+                    inv_bd = struct.pack('II', prev_node.id, next_node.id)
                     _inv_data += inv_bd
                     _data_size += 2*sizeof(UIDX)
 
@@ -782,26 +782,26 @@ cdef class IndexHnsw:
         bf_e.close()
 
         # load inverted nodes
-        cdef HnswNode* prev_node
-        cdef HnswNode* next_node = NULL
-        cdef USHORT _0, _l
+        cdef hnswNode* prev_node
+        cdef hnswNode* next_node = NULL
+        cdef USHORT _0, _1
         bf_inv = open(os.path.join(model_path, 'graph.inv'), 'rb')
         bd = bf_inv.read(sizeof(USHORT))
         while len(bd) > 0:
             _count = struct.unpack('H', bd)
             for _0 in range(_count):
                 p_id, n_id = struct.unpack('II', bf_inv.read(2*sizeof(UIDX)))
-                if next_node != NULL and next_node.id == p_id::
+                if next_node != NULL and next_node.id == p_id:
                     prev_node = next_node
                 else:
-                    prev_node = prehash_get(nodes_map, p_id)
+                    prev_node = <hnswNode*> prehash_get(nodes_map, p_id)
 
-                next_node = prehash_get(nodes_map, n_id)
+                next_node = <hnswNode*> prehash_get(nodes_map, n_id)
 
                 prev_node.next = next_node
-                for _l in range(next_node.low_level):
-                    PyMem_Free(next_node.edges[_l])
-                    next_node.edges[_l] = prev_node.edges[_l]
+                for _1 in range(next_node.low_level):
+                    PyMem_Free(next_node.edges[_1])
+                    next_node.edges[_1] = prev_node.edges[_1]
 
             bd = bf_inv.read(sizeof(USHORT))
         bf_inv.close()
