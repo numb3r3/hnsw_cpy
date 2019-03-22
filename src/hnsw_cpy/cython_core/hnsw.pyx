@@ -667,12 +667,14 @@ cdef class IndexHnsw:
                     _count += 1
                 bf_inv.write(struct.pack('H', _count) + _inv_data)
 
-            l = node_ptr.level
+            #l = node_ptr.level
 
             edges_bytes = b''
             edges_data_size = 0
 
-            while l >= node_ptr.low_level:
+            for l in range(node_ptr.low_level, node_ptr.level+1):
+
+            #while l >= node_ptr.low_level:
                 edge_set = node_ptr.edges[l]
 
                 level_edges_bytes = struct.pack('HH', l, edge_set.size)
@@ -751,12 +753,13 @@ cdef class IndexHnsw:
 
         self.entry_ptr = <hnswNode*> prehash_get(nodes_map, entry_id)
 
-
         # load graph edges
         bf_e = open(os.path.join(model_path, 'graph.edges'), 'rb')
 
         count = 0
         cdef hnswNode* neighbor_ptr
+        cdef USHORT _level
+
 
         while count < total_size:
             bd = bf_e.read(sizeof(UIDX) + 2*sizeof(USHORT))
@@ -769,7 +772,7 @@ cdef class IndexHnsw:
             node_edges_data = bf_e.read(data_len)
             _start_pos = 0
 
-            while level >= 0:
+            for _level in range(node_ptr.low_level, level+1):
                 _l, _size = struct.unpack('HH', node_edges_data[_start_pos:_start_pos+2*sizeof(USHORT)])
                 _start_pos += 2*sizeof(USHORT)
                 while _size > 0:
@@ -783,6 +786,8 @@ cdef class IndexHnsw:
 
             count += 1
         bf_e.close()
+
+        print('#3333')
 
         # load inverted nodes
         cdef hnswNode* prev_node
@@ -810,7 +815,10 @@ cdef class IndexHnsw:
             bd = bf_inv.read(sizeof(USHORT))
         bf_inv.close()
 
+        print('#444')
+
         prehash_free(nodes_map)
+        print('#555')
 
 
     cdef void free_hnsw(self):
