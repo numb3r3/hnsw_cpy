@@ -98,12 +98,13 @@ cpdef USHORT hamming_dist(BVECTOR x, BVECTOR y, USHORT datalen):
 
 
 cdef void _free_node(hnswNode* node):
-    cdef hnswNode* next_node = node.next
-    cdef hnswNode* cur_node
+    #cdef hnswNode* next_node = node.next
+    #cdef hnswNode* cur_node
     cdef USHORT level, low_level
     cdef USHORT l
     cdef queue* neighbors
 
+    '''
     while next_node != NULL:
         low_level = next_node.low_level
         level = next_node.level
@@ -121,9 +122,11 @@ cdef void _free_node(hnswNode* node):
         cur_node = next_node
         next_node = next_node.next
         PyMem_Free(cur_node)
+    '''
 
     level = node.level
-    for l in range(level+1):
+    low_level = node.low_level
+    for l in range(low_level, level+1):
         neighbors = _empty_edge_set(node, l, False)
         queue_free(neighbors)
 
@@ -785,6 +788,7 @@ cdef class IndexHnsw:
         cdef hnswNode* prev_node
         cdef hnswNode* next_node = NULL
         cdef USHORT _0, _1
+
         bf_inv = open(os.path.join(model_path, 'graph.inv'), 'rb')
         bd = bf_inv.read(sizeof(USHORT))
         while len(bd) > 0:
@@ -814,9 +818,7 @@ cdef class IndexHnsw:
         while not queue_is_empty(nodes_queue):
             node_ptr = <hnswNode*> queue_pop_head(nodes_queue)
             _free_node(node_ptr)
-
         queue_free(nodes_queue)
-
         PyMem_Free(self.config)
         self.config = NULL
 
@@ -849,6 +851,7 @@ cdef class IndexHnsw:
         self.config.m = kwargs.get('m', 12)
         self.config.m_max = kwargs.get('m_max', -1)
         self.config.m_max_0 = kwargs.get('m_max_0', -1)
+        self.config.epsilon = kwargs.get('epsilon', 0)
 
         if self.config.level_multiplier == -1:
             self.config.level_multiplier = 1.0 / log(1.0*self.config.m)
