@@ -24,7 +24,6 @@ cdef hnswNode* create_node(UIDX id, USHORT level, BVECTOR vector, USHORT bytes_n
      node.level = level
      node.low_level = 0
      node.next = NULL
-     node.in_degree = 0
      cdef USHORT N = bytes_num * sizeof(UCHAR)
 
      node.vector = <BVECTOR> PyMem_Malloc(N)
@@ -37,6 +36,7 @@ cdef hnswNode* create_node(UIDX id, USHORT level, BVECTOR vector, USHORT bytes_n
      for l in range(level+1):
          edge_set = <hnsw_edge_set*> PyMem_Malloc(sizeof(hnsw_edge_set))
          edge_set.size = 0
+         edge_set.indegree = 0
          edge_set.head_ptr = NULL
          edge_set.last_ptr = NULL
 
@@ -44,13 +44,13 @@ cdef hnswNode* create_node(UIDX id, USHORT level, BVECTOR vector, USHORT bytes_n
 
      return node
 
-cdef void _add_edge(hnswNode* f, hnswNode* t, DIST dist, UINT level):
+cdef void _add_edge(hnswNode* from_node, hnswNode* target_node, DIST dist, UINT level):
     cdef hnsw_edge* edge = <hnsw_edge*> PyMem_Malloc(sizeof(hnsw_edge))
-    edge.node = t
+    edge.node = target_node
     edge.dist = dist
     edge.next = NULL
 
-    cdef hnsw_edge_set* edge_set = f.edges[level]
+    cdef hnsw_edge_set* edge_set = from_node.edges[level]
     if edge_set.head_ptr == NULL:
         edge_set.head_ptr = edge
         edge_set.last_ptr = edge
@@ -59,7 +59,8 @@ cdef void _add_edge(hnswNode* f, hnswNode* t, DIST dist, UINT level):
         edge_set.last_ptr = edge
 
     edge_set.size += 1
-    t.in_degree += 1
+
+    target_node.edges[level].indegree += 1
 
 
 cdef queue* _empty_edge_set(hnswNode* node, USHORT level, bint check_island):
@@ -72,7 +73,7 @@ cdef queue* _empty_edge_set(hnswNode* node, USHORT level, bint check_island):
             queue_push_tail(island_nodes, head_edge.node)
             # WIP: must under the condition: check_island = True
             # WIP: DONT MODIFY THIS CODE LINE
-            head_edge.node.in_degree -= 1
+            head_edge.node.edges[level].indegree -= 1
 
         edge_set.head_ptr = head_edge.next
         head_edge.next = NULL
@@ -99,8 +100,6 @@ cpdef USHORT hamming_dist(BVECTOR x, BVECTOR y, USHORT datalen):
 
 
 cdef void _free_node(hnswNode* node):
-    #cdef hnswNode* next_node = node.next
-    #cdef hnswNode* cur_node
     cdef USHORT level = node.level
     cdef USHORT low_level = node.low_level
     cdef USHORT l
@@ -452,7 +451,7 @@ cdef class IndexHnsw:
 
         while not queue_is_empty(island_nodes):
             island = <hnswNode*> queue_pop_head(island_nodes)
-            if island.in_degree > 3:
+            if island.edges[level].indegree > int(0.5*self.config.m):
                 continue
 
             entry_ptr = self.entry_ptr

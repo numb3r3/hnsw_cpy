@@ -15,7 +15,9 @@ cdef struct hnsw_edge:
 cdef struct hnsw_edge_set:
     hnsw_edge* head_ptr
     hnsw_edge* last_ptr
-    UINT size
+    USHORT size
+
+    USHORT indegree
 
 cdef struct hnswNode:
     UIDX id
@@ -24,7 +26,6 @@ cdef struct hnswNode:
     USHORT low_level
     hnsw_edge_set** edges
     hnswNode* next
-    USHORT in_degree
 
 cdef struct hnswConfig:
     float level_multiplier
