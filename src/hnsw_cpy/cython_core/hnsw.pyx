@@ -282,7 +282,7 @@ cdef class IndexHnsw:
 
                 # TODO: uncomment the following codes to enlarge search space
                 # elif dist == lower_bound:
-                #     heappq_push(candidates_pq, dist, neighbor)
+                #    heappq_push(candidates_pq, dist, neighbor)
 
                 next_edge = next_edge.next
 
@@ -504,7 +504,7 @@ cdef class IndexHnsw:
             l -= 1
 
 
-        cdef UINT ef = max(self.config.ef, top_k)
+        cdef UINT ef = max(2*self.config.ef, top_k)
         cdef heappq* neighbors_pq = self.search_level(query, entry_ptr, ef, 0)
         cdef USHORT count = 0
 
