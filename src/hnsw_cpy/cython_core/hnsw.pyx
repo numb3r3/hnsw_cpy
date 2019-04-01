@@ -254,7 +254,7 @@ cdef class IndexHnsw:
 
             lower_bound = heappq_peak_max(result_pq).priority
 
-            if priority > lower_bound:
+            if priority > lower_bound and result_pq.size >= ef:
                 break
 
             edge_set = candidate.edges[level]
@@ -271,7 +271,7 @@ cdef class IndexHnsw:
 
                 dist = hamming_dist(query, neighbor.vector, self.bytes_num)
 
-                if dist < lower_bound or result_pq.size < ef:
+                if dist < lower_bound or result_pq.size <= ef:
                     heappq_push(candidates_pq, dist, neighbor)
                     heappq_push(result_pq, dist, neighbor)
 

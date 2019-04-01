@@ -48,7 +48,7 @@ if __name__ == '__main__':
     build_time_cost = []
     query_time_cost = []
 
-    hnsw = HnswIndex(bytes_num, m=15, ef_construction=150)
+    hnsw = HnswIndex(bytes_num, m=12, ef_construction=150)
     doc_vectors = from_file(sys.argv[1], bytes_num)
     data_size = doc_vectors.shape[0]
     doc_ids = np.array(list(range(data_size)))
