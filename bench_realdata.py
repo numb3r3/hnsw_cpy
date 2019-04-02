@@ -48,12 +48,10 @@ if __name__ == '__main__':
     build_time_cost = []
     query_time_cost = []
 
-    hnsw = HnswIndex(bytes_num, m=12, ef_construction=150)
+    hnsw = HnswIndex(bytes_num, m=12, ef_construction=80)
     doc_vectors = from_file(sys.argv[1], bytes_num)
     data_size = doc_vectors.shape[0]
     doc_ids = np.array(list(range(data_size)))
-
-    data_size = 100000
 
     build_start_t = time.perf_counter()
     for i in tqdm(range(data_size)):
@@ -62,8 +60,10 @@ if __name__ == '__main__':
 
     build_time_cost.append(time.perf_counter() - build_start_t)
 
+    hnsw.dump("data")
 
-    bt_result = bt_query(doc_vectors, doc_ids, doc_vectors[0:query_size, :], top_k, bytes_num)
+
+    bt_result = bt_query(doc_vectors, doc_ids, doc_vectors[:query_size, :], top_k, bytes_num)
 
     _query_time_cost = []
     query_start_t = time.perf_counter()
