@@ -275,10 +275,15 @@ cdef class IndexHnsw:
                     heappq_push(candidates_pq, dist, neighbor)
                     heappq_push(result_pq, dist, neighbor)
 
+                    if lower_bound < dist:
+                        lower_bound = dist
+
                     if result_pq.size > ef:
                         _e = heappq_pop_max(result_pq)
                         _e.value = NULL
                         PyMem_Free(_e)
+
+                        lower_bound = heappq_peak_max(result_pq).priority
 
                 # TODO: uncomment the following codes to enlarge search space
                 # elif dist == lower_bound:

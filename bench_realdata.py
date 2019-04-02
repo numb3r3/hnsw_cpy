@@ -39,7 +39,7 @@ if __name__ == '__main__':
     #num_repeat = 3
     top_k = 10
     # data_size = 10000
-    query_size = 250
+    query_size = 1000
     total_size = 0
 
     print(f'Benchmarking for HNSW indexer')
@@ -53,6 +53,8 @@ if __name__ == '__main__':
     data_size = doc_vectors.shape[0]
     doc_ids = np.array(list(range(data_size)))
 
+    data_size = 100000
+
     build_start_t = time.perf_counter()
     for i in tqdm(range(data_size)):
         vb = doc_vectors[i,:].tobytes()
@@ -61,14 +63,14 @@ if __name__ == '__main__':
     build_time_cost.append(time.perf_counter() - build_start_t)
 
 
-    bt_result = bt_query(doc_vectors, doc_ids, doc_vectors[-query_size:, :], top_k, bytes_num)
+    bt_result = bt_query(doc_vectors, doc_ids, doc_vectors[0:query_size, :], top_k, bytes_num)
 
     _query_time_cost = []
     query_start_t = time.perf_counter()
     recalls = []
     for qid in range(query_size):
         # query_data = np.random.randint(1, 255, bytes_num, dtype=np.uint8).tobytes()
-        query_data = doc_vectors[data_size-query_size+qid,:].tobytes()
+        query_data = doc_vectors[qid,:].tobytes()
 
         h_r = [(r['id'], int(r['distance'])) for r in hnsw.query(query_data, top_k)]
         b_r = bt_result[qid]
